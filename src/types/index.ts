@@ -2,10 +2,10 @@
 export interface UserInfo {
   name: string;
   email: string;
+  sessionId: string;
 }
 
 export interface WineTastingResponse {
-  userId?: string;
   initialThoughts: string;
   rating: number;
   fruitFlavors: string[];
@@ -14,8 +14,9 @@ export interface WineTastingResponse {
 }
 
 export interface Question {
-  id: number;
+  id: string;
   type: 'signin' | 'text' | 'scale' | 'multipleChoice' | 'interlude' | 'thanks';
-  question: string;
+  title?: string;
+  description?: string;
   options?: string[];
 }

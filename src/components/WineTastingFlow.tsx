@@ -9,9 +9,10 @@ import MultipleChoiceQuestion from './MultipleChoiceQuestion';
 import Interlude from './Interlude';
 import ThanksScreen from './ThanksScreen';
 import ProgressIndicator from './ProgressIndicator';
+import LoadingScreen from './LoadingScreen';
 
 const WineTastingFlow = () => {
-  const { currentQuestionIndex } = useWineTasting();
+  const { currentQuestionIndex, loading } = useWineTasting();
   const currentQuestion = questions[currentQuestionIndex];
 
   const renderQuestionComponent = () => {
@@ -32,6 +33,11 @@ const WineTastingFlow = () => {
         return <div>Unknown question type</div>;
     }
   };
+
+  // Show loading screen if loading is true
+  if (loading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

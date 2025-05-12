@@ -7,6 +7,7 @@ interface WineTastingContextType {
   currentQuestionIndex: number;
   userInfo: UserInfo | null;
   wineTastingResponse: WineTastingResponse;
+  loading: boolean;
   setUserInfo: (info: UserInfo) => void;
   setInitialThoughts: (thoughts: string) => void;
   setRating: (rating: number) => void;
@@ -23,7 +24,17 @@ const WineTastingContext = createContext<WineTastingContextType | undefined>(und
 export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  
+  // Auto-disable loading after 3 seconds
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   const [wineTastingResponse, setWineTastingResponse] = useState<WineTastingResponse>({
     initialThoughts: '',
@@ -56,6 +67,7 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
     currentQuestionIndex,
     userInfo,
     wineTastingResponse,
+    loading,
     setUserInfo: (info: UserInfo) => setUserInfo(info),
     setInitialThoughts: (thoughts: string) => 
       setWineTastingResponse((prev) => ({ ...prev, initialThoughts: thoughts })),
