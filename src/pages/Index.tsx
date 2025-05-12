@@ -5,9 +5,11 @@ import WineTastingFlow from '../components/WineTastingFlow';
 
 const Index = () => {
   return (
-    <WineTastingProvider>
-      <WineTastingFlow />
-    </WineTastingProvider>
+    <div className="min-h-screen bg-gradient-to-b from-purple-900 to-purple-950">
+      <WineTastingProvider>
+        <WineTastingFlow />
+      </WineTastingProvider>
+    </div>
   );
 };
 

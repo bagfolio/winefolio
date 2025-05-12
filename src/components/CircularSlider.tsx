@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 
 interface CircularSliderProps {
@@ -97,18 +98,63 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
   const theta = ((rotation - 90) * Math.PI) / 180; // convert to radians and adjust to start from top
   const thumbX = 150 + radius * Math.cos(theta);
   const thumbY = 150 + radius * Math.sin(theta);
+  
+  // Calculate fill percentage for the thumb
+  const fillPercentage = ((value - min) / (max - min)) * 100;
+
+  // Calculate tick positions
+  const ticks = [];
+  const tickCount = max - min + 1;
+  for (let i = 0; i < tickCount; i++) {
+    const tickRotation = (i / (tickCount - 1)) * 360;
+    const tickTheta = ((tickRotation - 90) * Math.PI) / 180;
+    const innerRadius = radius - 10;
+    const outerRadius = radius + 5;
+    const tickX1 = 150 + innerRadius * Math.cos(tickTheta);
+    const tickY1 = 150 + innerRadius * Math.sin(tickTheta);
+    const tickX2 = 150 + outerRadius * Math.cos(tickTheta);
+    const tickY2 = 150 + outerRadius * Math.sin(tickTheta);
+    
+    ticks.push(
+      <line
+        key={i}
+        x1={tickX1}
+        y1={tickY1}
+        x2={tickX2}
+        y2={tickY2}
+        stroke="rgba(255,255,255,0.5)"
+        strokeWidth={i % 5 === 0 ? "2" : "1"}
+      />
+    );
+  }
 
   return (
     <div 
       className="circular-slider" 
       ref={sliderRef}
     >
-      <div className="circular-slider-bg"></div>
+      <div className="circular-slider-bg">
+        <svg width="300" height="300" viewBox="0 0 300 300">
+          <circle cx="150" cy="150" r={radius} stroke="rgba(255,255,255,0.2)" strokeWidth="4" fill="none" />
+          {ticks}
+          <circle 
+            cx="150" 
+            cy="150" 
+            r={radius} 
+            stroke="white" 
+            strokeWidth="4" 
+            fill="none"
+            strokeDasharray={`${(rotation / 360) * (2 * Math.PI * radius)} ${2 * Math.PI * radius}`}
+            transform="rotate(-90, 150, 150)"
+          />
+        </svg>
+      </div>
       <div 
         className="circular-slider-thumb" 
         style={{ 
           left: `${thumbX}px`, 
-          top: `${thumbY}px` 
+          top: `${thumbY}px`,
+          background: `radial-gradient(circle, rgba(255,255,255,1) ${100 - fillPercentage}%, rgba(155,135,245,1) ${100 - fillPercentage}%)`
         }}
         onMouseDown={handleMouseDown}
       ></div>
