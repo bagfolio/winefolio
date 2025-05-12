@@ -8,6 +8,8 @@ import ScaleQuestion from './ScaleQuestion';
 import MultipleChoiceQuestion from './MultipleChoiceQuestion';
 import Interlude from './Interlude';
 import ThanksScreen from './ThanksScreen';
+import AudioMessage from './AudioMessage';
+import VideoMessage from './VideoMessage';
 import ProgressIndicator from './ProgressIndicator';
 import LoadingScreen from './LoadingScreen';
 
@@ -27,6 +29,10 @@ const WineTastingFlow = () => {
         return <MultipleChoiceQuestion questionId={currentQuestion.id} />;
       case 'interlude':
         return <Interlude questionId={currentQuestion.id} />;
+      case 'audio':
+        return <AudioMessage questionId={currentQuestion.id} />;
+      case 'video':
+        return <VideoMessage questionId={currentQuestion.id} />;
       case 'thanks':
         return <ThanksScreen questionId={currentQuestion.id} />;
       default:

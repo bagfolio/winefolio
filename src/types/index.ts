@@ -15,10 +15,12 @@ export interface WineTastingResponse {
 
 export interface Question {
   id: number;
-  type: 'signin' | 'text' | 'scale' | 'multipleChoice' | 'interlude' | 'thanks';
+  type: 'signin' | 'text' | 'scale' | 'multipleChoice' | 'interlude' | 'thanks' | 'audio' | 'video';
   title?: string;
   description?: string;
   options?: string[];
   question?: string;
   bottleNumber?: number;
+  mediaUrl?: string;
+  sommelierName?: string;
 }
