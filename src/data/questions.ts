@@ -50,7 +50,7 @@ export const questions: Question[] = [
   {
     id: 7,
     type: 'interlude',
-    question: 'Now we'll move on to the second wine. Take a moment to clear your palate before continuing.',
+    question: 'Now we\'ll move on to the second wine. Take a moment to clear your palate before continuing.',
     description: 'Please drink some water and perhaps have a neutral snack like crackers before the next wine.',
   },
   // Second wine - initial thoughts
