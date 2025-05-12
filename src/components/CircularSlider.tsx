@@ -44,66 +44,41 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
   
   const handleMouseMoveDocument = (e: MouseEvent) => {
     if (isDragging.current && sliderRef.current) {
-      const rect = sliderRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      
-      const mouseX = e.clientX;
-      const mouseY = e.clientY;
-      
-      // Calculate angle
-      const angle = Math.atan2(mouseY - centerY, mouseX - centerX);
-      let degrees = angle * (180 / Math.PI) + 90; // +90 to start from top
-      
-      if (degrees < 0) {
-        degrees += 360;
-      }
-      
-      // Keep rotation within 0-360
-      let newRotation = degrees % 360;
-      
-      // Calculate new value based on rotation and round to step
-      const range = max - min;
-      let newVal = min + (newRotation / 360) * range;
-      let newValue = Math.round(newVal / step) * step;
-      
-      // Ensure value is within bounds
-      newValue = Math.max(min, Math.min(max, newValue));
-      
-      // Set the new value if it's different
-      if (Math.abs(newValue - value) > 0.001) {
-        triggerHapticFeedback();
-        onChange(newValue);
-      }
+      updateValueFromEvent(e.clientX, e.clientY);
     }
   };
   
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isDragging.current && sliderRef.current) {
-      const rect = sliderRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      
-      // Calculate angle
-      const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-      let degrees = angle * (180 / Math.PI) + 90; // +90 to start from top
-      
-      if (degrees < 0) {
-        degrees += 360;
-      }
-      
-      // Calculate new value based on rotation and round to step
-      const range = max - min;
-      let newVal = min + (degrees / 360) * range;
-      let newValue = Math.round(newVal / step) * step;
-      
-      // Ensure value is within bounds and set it
-      newValue = Math.max(min, Math.min(max, newValue));
-      
-      if (Math.abs(newValue - value) > 0.001) {
-        triggerHapticFeedback();
-        onChange(newValue);
-      }
+      updateValueFromEvent(e.clientX, e.clientY);
+    }
+  };
+  
+  const updateValueFromEvent = (clientX: number, clientY: number) => {
+    if (!sliderRef.current) return;
+    
+    const rect = sliderRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    // Calculate angle
+    const angle = Math.atan2(clientY - centerY, clientX - centerX);
+    let degrees = angle * (180 / Math.PI) + 90; // +90 to start from top
+    
+    if (degrees < 0) {
+      degrees += 360;
+    }
+    
+    // Calculate new value based on rotation and round to step
+    const range = max - min;
+    let newVal = min + (degrees / 360) * range;
+    newVal = Math.max(min, Math.min(max, newVal));
+    let newValue = Math.round(newVal / step) * step;
+    
+    // Set the new value if it's different
+    if (Math.abs(newValue - value) > 0.001) {
+      triggerHapticFeedback();
+      onChange(newValue);
     }
   };
   
@@ -113,16 +88,41 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
     document.removeEventListener('mouseup', handleMouseUp);
   };
 
+  // Handle touch events for mobile
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    isDragging.current = true;
+    handleTouchMove(e);
+    
+    document.addEventListener('touchmove', handleTouchMoveDocument, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+  };
+  
+  const handleTouchMoveDocument = (e: TouchEvent) => {
+    e.preventDefault(); // Prevent scrolling when sliding
+    if (isDragging.current && sliderRef.current && e.touches[0]) {
+      updateValueFromEvent(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (isDragging.current && sliderRef.current && e.touches[0]) {
+      updateValueFromEvent(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+  
+  const handleTouchEnd = () => {
+    isDragging.current = false;
+    document.removeEventListener('touchmove', handleTouchMoveDocument);
+    document.removeEventListener('touchend', handleTouchEnd);
+  };
+
   // Calculate thumb position
   const radius = 150 - 20; // subtract half of thumb size
   const theta = ((rotation - 90) * Math.PI) / 180; // convert to radians and adjust to start from top
   const thumbX = 150 + radius * Math.cos(theta);
   const thumbY = 150 + radius * Math.sin(theta);
   
-  // Calculate fill percentage for the thumb
-  const fillPercentage = ((value - min) / (max - min)) * 100;
-
-  // Calculate tick positions
+  // Calculate ticks
   const ticks = [];
   const tickCount = max - min + 1;
   for (let i = 0; i < tickCount; i++) {
@@ -148,88 +148,11 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
     );
   }
 
-  // Handle touch events for mobile
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    isDragging.current = true;
-    handleTouchMove(e);
-    
-    document.addEventListener('touchmove', handleTouchMoveDocument, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd);
-  };
-  
-  const handleTouchMoveDocument = (e: TouchEvent) => {
-    e.preventDefault(); // Prevent scrolling when sliding
-    if (isDragging.current && sliderRef.current && e.touches[0]) {
-      const rect = sliderRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      
-      const touchX = e.touches[0].clientX;
-      const touchY = e.touches[0].clientY;
-      
-      const angle = Math.atan2(touchY - centerY, touchX - centerX);
-      let degrees = angle * (180 / Math.PI) + 90;
-      
-      if (degrees < 0) {
-        degrees += 360;
-      }
-      
-      // Calculate new value based on rotation and round to step
-      const range = max - min;
-      let newVal = min + (degrees / 360) * range;
-      let newValue = Math.round(newVal / step) * step;
-      
-      // Ensure value is within bounds and set it
-      newValue = Math.max(min, Math.min(max, newValue));
-      
-      if (Math.abs(newValue - value) > 0.001) {
-        triggerHapticFeedback();
-        onChange(newValue);
-      }
-    }
-  };
-  
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (isDragging.current && sliderRef.current && e.touches[0]) {
-      const rect = sliderRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      
-      const touchX = e.touches[0].clientX;
-      const touchY = e.touches[0].clientY;
-      
-      const angle = Math.atan2(touchY - centerY, touchX - centerX);
-      let degrees = angle * (180 / Math.PI) + 90;
-      
-      if (degrees < 0) {
-        degrees += 360;
-      }
-      
-      // Calculate new value based on rotation and round to step
-      const range = max - min;
-      let newVal = min + (degrees / 360) * range;
-      let newValue = Math.round(newVal / step) * step;
-      
-      // Ensure value is within bounds
-      newValue = Math.max(min, Math.min(max, newValue));
-      
-      if (Math.abs(newValue - value) > 0.001) {
-        triggerHapticFeedback();
-        onChange(newValue);
-      }
-    }
-  };
-  
-  const handleTouchEnd = () => {
-    isDragging.current = false;
-    document.removeEventListener('touchmove', handleTouchMoveDocument);
-    document.removeEventListener('touchend', handleTouchEnd);
-  };
-
   return (
     <div 
       className="circular-slider" 
       ref={sliderRef}
+      id={`circular-slider-${Math.random().toString(36).substring(2, 11)}`}
     >
       <div className="circular-slider-bg">
         <svg width="300" height="300" viewBox="0 0 300 300">
@@ -252,7 +175,7 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
         style={{ 
           left: `${thumbX}px`, 
           top: `${thumbY}px`,
-          background: `radial-gradient(circle, rgba(255,255,255,1) ${100 - fillPercentage}%, rgba(155,135,245,1) ${100 - fillPercentage}%)`
+          background: `radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(155,135,245,1) 75%)`
         }}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
