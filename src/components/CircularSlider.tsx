@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 
 interface CircularSliderProps {
@@ -61,14 +62,15 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
       // Keep rotation within 0-360
       let newRotation = degrees % 360;
       
-      // Calculate new value based on rotation
+      // Calculate new value based on rotation and round to step
       const range = max - min;
-      let newValue = min + Math.round((newRotation / 360) * range / step) * step;
+      let newVal = min + (newRotation / 360) * range;
+      let newValue = Math.round(newVal / step) * step;
       
       // Ensure value is within bounds
       newValue = Math.max(min, Math.min(max, newValue));
       
-      // Trigger haptic feedback if the value changed
+      // Set the new value if it's different
       if (Math.abs(newValue - value) > 0.001) {
         triggerHapticFeedback();
         onChange(newValue);
@@ -90,13 +92,17 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
         degrees += 360;
       }
       
-      // Calculate new value based on rotation
+      // Calculate new value based on rotation and round to step
       const range = max - min;
-      const newValue = min + Math.round((degrees / 360) * range / step) * step;
+      let newVal = min + (degrees / 360) * range;
+      let newValue = Math.round(newVal / step) * step;
+      
+      // Ensure value is within bounds and set it
+      newValue = Math.max(min, Math.min(max, newValue));
       
       if (Math.abs(newValue - value) > 0.001) {
         triggerHapticFeedback();
-        onChange(Math.max(min, Math.min(max, newValue)));
+        onChange(newValue);
       }
     }
   };
@@ -168,8 +174,12 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
         degrees += 360;
       }
       
+      // Calculate new value based on rotation and round to step
       const range = max - min;
-      let newValue = min + Math.round((degrees / 360) * range / step) * step;
+      let newVal = min + (degrees / 360) * range;
+      let newValue = Math.round(newVal / step) * step;
+      
+      // Ensure value is within bounds and set it
       newValue = Math.max(min, Math.min(max, newValue));
       
       if (Math.abs(newValue - value) > 0.001) {
@@ -195,12 +205,17 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
         degrees += 360;
       }
       
+      // Calculate new value based on rotation and round to step
       const range = max - min;
-      const newValue = min + Math.round((degrees / 360) * range / step) * step;
+      let newVal = min + (degrees / 360) * range;
+      let newValue = Math.round(newVal / step) * step;
+      
+      // Ensure value is within bounds
+      newValue = Math.max(min, Math.min(max, newValue));
       
       if (Math.abs(newValue - value) > 0.001) {
         triggerHapticFeedback();
-        onChange(Math.max(min, Math.min(max, newValue)));
+        onChange(newValue);
       }
     }
   };

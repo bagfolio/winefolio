@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Wine } from 'lucide-react';
 
 const LoadingScreen = () => {
   const [fillLevel, setFillLevel] = useState(0);
@@ -17,27 +16,9 @@ const LoadingScreen = () => {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-purple-950 bg-opacity-95 backdrop-blur-sm">
       <div className="relative flex flex-col items-center">
-        <div className="relative mb-12 h-60">
-          {/* Wine bottle */}
-          <motion.div 
-            className="absolute top-0 left-1/2 -ml-6"
-            initial={{ y: -20 }}
-            animate={{ y: 0, rotate: -25 }}
-            transition={{ duration: 1.5, ease: "easeInOut" }}
-          >
-            <Wine size={48} className="text-purple-300" />
-          </motion.div>
-          
-          {/* Animated pouring wine */}
-          <motion.div
-            className="absolute top-12 left-1/2 h-24 w-1 bg-gradient-to-b from-purple-400 to-purple-700"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 24, opacity: [0, 1, 1, 1, 0.7] }}
-            transition={{ duration: 2, ease: "easeOut" }}
-          />
-          
-          {/* Wine glass with stem - positioned below the bottle */}
-          <div className="absolute bottom-0 left-1/2 -ml-10 w-20 h-32">
+        <div className="relative mb-12 h-60 flex items-center justify-center">
+          {/* Wine glass with stem */}
+          <div className="relative w-20 h-32">
             {/* Glass bowl */}
             <div className="absolute top-0 left-0 w-20 h-14 border-2 border-white/30 rounded-b-full overflow-hidden">
               {/* Wine filling animation */}
@@ -45,7 +26,7 @@ const LoadingScreen = () => {
                 className="absolute bottom-0 w-full bg-gradient-to-tr from-purple-800 to-purple-500"
                 initial={{ height: "0%" }}
                 animate={{ height: `${fillLevel}%` }}
-                transition={{ duration: 2, ease: "easeOut", delay: 0.5 }}
+                transition={{ duration: 2, ease: "easeOut" }}
               />
             </div>
             
