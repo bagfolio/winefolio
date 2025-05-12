@@ -108,6 +108,28 @@ export const useCircularSliderDrag = ({
     document.addEventListener('touchcancel', handleTouchEnd);
   }, [updateValueFromEvent, handleTouchMove, handleTouchEnd]);
   
+  // Add handleTrackInteraction function to handle clicks or taps on the track
+  const handleTrackInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    
+    // Get the correct client coordinates based on event type
+    let clientX: number, clientY: number;
+    
+    if ('touches' in e && e.touches[0]) {
+      // Touch event
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if ('clientX' in e) {
+      // Mouse event
+      clientX = e.clientX;
+      clientY = e.clientY;
+    } else {
+      return; // Invalid event
+    }
+    
+    updateValueFromEvent(clientX, clientY);
+  }, [updateValueFromEvent]);
+  
   // Setup and cleanup event listeners
   useEffect(() => {
     return () => {
@@ -119,5 +141,5 @@ export const useCircularSliderDrag = ({
     };
   }, [handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
   
-  return { handleMouseDown, handleTouchStart };
+  return { handleMouseDown, handleTouchStart, handleTrackInteraction };
 };
