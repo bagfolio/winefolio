@@ -29,37 +29,34 @@ const VideoMessage: React.FC<VideoMessageProps> = ({ questionId }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto min-h-[60vh]">
+    <div className="flex flex-col items-center justify-center px-6 py-6 mx-auto min-h-[60vh]">
       <div className="w-full max-w-md">
         {/* Header with bottle icon */}
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-4">
           <div className="flex items-center gap-2">
             {question?.bottleNumber && (
               <div className="relative">
-                <Wine size={28} className="text-purple-300" />
+                <Wine size={24} className="text-purple-300" />
                 <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-bold">
                   {question.bottleNumber}
                 </div>
               </div>
             )}
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-xl font-semibold text-white">
               {question?.title || 'Sommelier Video Message'}
             </h2>
           </div>
         </div>
 
-        <Card className="bg-purple-900/40 border-purple-700/50 backdrop-blur-sm p-6 mb-6 rounded-xl">
-          <div className="text-center mb-4">
-            <Video className="mx-auto mb-2 text-purple-300" size={36} />
-            <p className="text-white/90 mb-1">
-              {question?.sommelierName || 'Sommelier'} has left you a video message
-            </p>
-            <p className="text-white/70 text-sm mb-4">
-              {question?.description || 'Watch for special insights about this wine'}
+        <Card className="bg-purple-900/40 border-purple-700/30 backdrop-blur-sm p-4 mb-5 rounded-xl shadow-lg">
+          <div className="text-center mb-3">
+            <Video className="mx-auto mb-2 text-purple-300" size={28} />
+            <p className="text-white/90 text-sm">
+              {question?.sommelierName || 'Sommelier'} has a video message for you
             </p>
           </div>
 
-          <AspectRatio ratio={16/9} className="bg-black/50 rounded-lg overflow-hidden relative mb-3">
+          <AspectRatio ratio={16/9} className="bg-black/30 rounded-lg overflow-hidden relative mb-3">
             <video 
               ref={videoRef}
               className="w-full h-full object-cover"
@@ -71,7 +68,7 @@ const VideoMessage: React.FC<VideoMessageProps> = ({ questionId }) => {
                 onClick={handlePlayPause}
                 size="icon"
                 variant="ghost" 
-                className="absolute inset-0 m-auto h-14 w-14 rounded-full bg-white/20 hover:bg-white/30 text-white"
+                className="absolute inset-0 m-auto h-14 w-14 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all hover:scale-105"
               >
                 <Play size={24} />
               </Button>
@@ -82,7 +79,7 @@ const VideoMessage: React.FC<VideoMessageProps> = ({ questionId }) => {
             <Button 
               onClick={handlePlayPause}
               variant="ghost" 
-              className="bg-black/30 hover:bg-black/40 text-white px-4 py-2 rounded-full"
+              className="bg-black/20 hover:bg-black/30 text-white px-4 py-2 rounded-full transition-colors"
             >
               {isPlaying ? (
                 <>
