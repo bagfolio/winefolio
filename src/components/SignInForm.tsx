@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useWineTasting } from '@/context/WineTastingContext';
 
 const SignInForm = () => {
-  const { setUserInfo, nextQuestion } = useWineTasting();
+  const { setUserInfo, nextQuestion, setLoading } = useWineTasting();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [sessionId, setSessionId] = useState('');
@@ -43,8 +43,15 @@ const SignInForm = () => {
     setErrors(newErrors);
     
     if (valid) {
-      setUserInfo({ name, email, sessionId });
-      nextQuestion();
+      // Set loading to true before transitioning
+      setLoading(true);
+      
+      // Simulate a loading delay (can be removed in a real application)
+      setTimeout(() => {
+        setUserInfo({ name, email, sessionId });
+        nextQuestion();
+        setLoading(false); // Turn off loading after navigation
+      }, 3000); // 3 second loading for effect
     }
   };
 

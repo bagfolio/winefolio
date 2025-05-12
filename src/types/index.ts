@@ -19,4 +19,5 @@ export interface Question {
   title?: string;
   description?: string;
   options?: string[];
+  question?: string; // Added this field to fix type errors
 }
