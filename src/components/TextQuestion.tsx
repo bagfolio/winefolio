@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Wine } from 'lucide-react';
 import WineFaq from './WineFaq';
 
 interface TextQuestionProps {
@@ -21,22 +21,23 @@ const TextQuestion: React.FC<TextQuestionProps> = ({ questionId }) => {
   } = useWineTasting();
   
   const question = questions.find(q => q.id === questionId);
+  const bottleNumber = question?.bottleNumber || 1;
   const [text, setText] = useState('');
   
   useEffect(() => {
-    // Set initial text based on which question we're on
-    if (questionId === 1) {
-      setText(wineTastingResponse.initialThoughts);
-    } else if (questionId === 6) {
-      setText(wineTastingResponse.additionalThoughts);
+    // Set initial text based on which question we're on and bottle number
+    if (questionId === 1 || questionId === 8) { // Initial thoughts for both wines
+      setText(wineTastingResponse[bottleNumber]?.initialThoughts || '');
+    } else if (questionId === 6 || questionId === 13) { // Additional thoughts for both wines
+      setText(wineTastingResponse[bottleNumber]?.additionalThoughts || '');
     }
-  }, [questionId, wineTastingResponse]);
+  }, [questionId, wineTastingResponse, bottleNumber]);
   
   const handleNext = () => {
-    if (questionId === 1) {
-      setInitialThoughts(text);
-    } else if (questionId === 6) {
-      setAdditionalThoughts(text);
+    if (questionId === 1 || questionId === 8) { // Initial thoughts
+      setInitialThoughts(text, bottleNumber);
+    } else if (questionId === 6 || questionId === 13) { // Additional thoughts
+      setAdditionalThoughts(text, bottleNumber);
     }
     nextQuestion();
   };
@@ -48,6 +49,14 @@ const TextQuestion: React.FC<TextQuestionProps> = ({ questionId }) => {
           <div className="inline-block bg-purple-900/70 rounded-full px-4 py-1 mb-4">
             <span className="text-sm text-white">Question {questionId}</span>
           </div>
+          
+          {bottleNumber && (
+            <div className="inline-flex items-center gap-2 bg-purple-700/70 rounded-full px-4 py-1 mb-4 ml-2">
+              <Wine size={14} className="text-white" />
+              <span className="text-sm text-white">Bottle {bottleNumber}</span>
+            </div>
+          )}
+          
           <h2 className="text-2xl font-bold text-white mb-4">
             {question?.question}
           </h2>

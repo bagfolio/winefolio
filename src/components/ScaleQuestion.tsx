@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
 import CircularSlider from './CircularSlider';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Wine } from 'lucide-react';
 import WineFaq from './WineFaq';
 
 interface ScaleQuestionProps {
@@ -21,18 +21,24 @@ const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ questionId }) => {
   } = useWineTasting();
   
   const question = questions.find(q => q.id === questionId);
+  const bottleNumber = question?.bottleNumber || 1;
   
   const getValue = () => {
-    if (questionId === 2) return wineTastingResponse.rating;
-    if (questionId === 5) return wineTastingResponse.acidityRating;
+    // Get rating for the current bottle
+    if (questionId === 2 || questionId === 9) { // Overall rating questions
+      return wineTastingResponse[bottleNumber]?.rating || 5;
+    }
+    if (questionId === 5 || questionId === 12) { // Acidity rating questions
+      return wineTastingResponse[bottleNumber]?.acidityRating || 5;
+    }
     return 5; // Default
   };
   
   const handleChange = (value: number) => {
-    if (questionId === 2) {
-      setRating(value);
-    } else if (questionId === 5) {
-      setAcidityRating(value);
+    if (questionId === 2 || questionId === 9) { // Overall rating
+      setRating(value, bottleNumber);
+    } else if (questionId === 5 || questionId === 12) { // Acidity rating
+      setAcidityRating(value, bottleNumber);
     }
   };
   
@@ -43,6 +49,14 @@ const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ questionId }) => {
           <div className="inline-block bg-purple-900/70 rounded-full px-4 py-1 mb-4">
             <span className="text-sm text-white">Question {questionId}</span>
           </div>
+          
+          {bottleNumber && (
+            <div className="inline-flex items-center gap-2 bg-purple-700/70 rounded-full px-4 py-1 mb-4 ml-2">
+              <Wine size={14} className="text-white" />
+              <span className="text-sm text-white">Bottle {bottleNumber}</span>
+            </div>
+          )}
+          
           <h2 className="text-2xl font-bold text-white mb-4">
             {question?.question}
           </h2>

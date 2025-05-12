@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Wine } from 'lucide-react';
 import WineFaq from './WineFaq';
 
 interface MultipleChoiceQuestionProps {
@@ -19,17 +19,19 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({ questio
   } = useWineTasting();
   
   const question = questions.find(q => q.id === questionId);
+  const bottleNumber = question?.bottleNumber || 1;
   const options = question?.options || [];
   
   const isSelected = (option: string) => {
-    return wineTastingResponse.fruitFlavors.includes(option);
+    return wineTastingResponse[bottleNumber]?.fruitFlavors?.includes(option) || false;
   };
   
   const toggleOption = (option: string) => {
+    const currentFlavors = wineTastingResponse[bottleNumber]?.fruitFlavors || [];
     if (isSelected(option)) {
-      setFruitFlavors(wineTastingResponse.fruitFlavors.filter(item => item !== option));
+      setFruitFlavors(currentFlavors.filter(item => item !== option), bottleNumber);
     } else {
-      setFruitFlavors([...wineTastingResponse.fruitFlavors, option]);
+      setFruitFlavors([...currentFlavors, option], bottleNumber);
     }
   };
 
@@ -40,6 +42,14 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({ questio
           <div className="inline-block bg-purple-900/70 rounded-full px-4 py-1 mb-4">
             <span className="text-sm text-white">Question {questionId}</span>
           </div>
+          
+          {bottleNumber && (
+            <div className="inline-flex items-center gap-2 bg-purple-700/70 rounded-full px-4 py-1 mb-4 ml-2">
+              <Wine size={14} className="text-white" />
+              <span className="text-sm text-white">Bottle {bottleNumber}</span>
+            </div>
+          )}
+          
           <h2 className="text-2xl font-bold text-white mb-4">
             {question?.question}
           </h2>
@@ -74,7 +84,7 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({ questio
           <Button
             onClick={nextQuestion}
             className="flex items-center gap-2 bg-white hover:bg-gray-200 text-purple-950"
-            disabled={wineTastingResponse.fruitFlavors.length === 0}
+            disabled={!(wineTastingResponse[bottleNumber]?.fruitFlavors?.length > 0)}
           >
             Next
             <ArrowRight size={16} />

@@ -14,10 +14,11 @@ export interface WineTastingResponse {
 }
 
 export interface Question {
-  id: string;
+  id: number;
   type: 'signin' | 'text' | 'scale' | 'multipleChoice' | 'interlude' | 'thanks';
   title?: string;
   description?: string;
   options?: string[];
   question?: string;
+  bottleNumber?: number;
 }

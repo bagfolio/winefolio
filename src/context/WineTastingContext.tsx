@@ -6,15 +6,17 @@ import { useToast } from '@/components/ui/use-toast';
 interface WineTastingContextType {
   currentQuestionIndex: number;
   userInfo: UserInfo | null;
-  wineTastingResponse: WineTastingResponse;
+  wineTastingResponse: {
+    [bottleNumber: number]: WineTastingResponse;
+  };
   loading: boolean;
   setLoading: (isLoading: boolean) => void;
   setUserInfo: (info: UserInfo) => void;
-  setInitialThoughts: (thoughts: string) => void;
-  setRating: (rating: number) => void;
-  setFruitFlavors: (flavors: string[]) => void;
-  setAcidityRating: (rating: number) => void;
-  setAdditionalThoughts: (thoughts: string) => void;
+  setInitialThoughts: (thoughts: string, bottleNumber?: number) => void;
+  setRating: (rating: number, bottleNumber?: number) => void;
+  setFruitFlavors: (flavors: string[], bottleNumber?: number) => void;
+  setAcidityRating: (rating: number, bottleNumber?: number) => void;
+  setAdditionalThoughts: (thoughts: string, bottleNumber?: number) => void;
   nextQuestion: () => void;
   previousQuestion: () => void;
   submitResponses: () => void;
@@ -25,15 +27,27 @@ const WineTastingContext = createContext<WineTastingContextType | undefined>(und
 export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [loading, setLoading] = useState(false); // Changed to false by default
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   
-  const [wineTastingResponse, setWineTastingResponse] = useState<WineTastingResponse>({
-    initialThoughts: '',
-    rating: 5,
-    fruitFlavors: [],
-    acidityRating: 5,
-    additionalThoughts: '',
+  // Initialize responses for multiple bottles
+  const [wineTastingResponse, setWineTastingResponse] = useState<{
+    [bottleNumber: number]: WineTastingResponse;
+  }>({
+    1: {
+      initialThoughts: '',
+      rating: 5,
+      fruitFlavors: [],
+      acidityRating: 5,
+      additionalThoughts: '',
+    },
+    2: {
+      initialThoughts: '',
+      rating: 5,
+      fruitFlavors: [],
+      acidityRating: 5,
+      additionalThoughts: '',
+    }
   });
 
   const nextQuestion = () => {
@@ -62,16 +76,46 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
     loading,
     setLoading,
     setUserInfo: (info: UserInfo) => setUserInfo(info),
-    setInitialThoughts: (thoughts: string) => 
-      setWineTastingResponse((prev) => ({ ...prev, initialThoughts: thoughts })),
-    setRating: (rating: number) => 
-      setWineTastingResponse((prev) => ({ ...prev, rating })),
-    setFruitFlavors: (flavors: string[]) => 
-      setWineTastingResponse((prev) => ({ ...prev, fruitFlavors: flavors })),
-    setAcidityRating: (rating: number) => 
-      setWineTastingResponse((prev) => ({ ...prev, acidityRating: rating })),
-    setAdditionalThoughts: (thoughts: string) => 
-      setWineTastingResponse((prev) => ({ ...prev, additionalThoughts: thoughts })),
+    setInitialThoughts: (thoughts: string, bottleNumber = 1) => 
+      setWineTastingResponse((prev) => ({
+        ...prev,
+        [bottleNumber]: {
+          ...prev[bottleNumber],
+          initialThoughts: thoughts
+        }
+      })),
+    setRating: (rating: number, bottleNumber = 1) => 
+      setWineTastingResponse((prev) => ({
+        ...prev,
+        [bottleNumber]: {
+          ...prev[bottleNumber],
+          rating
+        }
+      })),
+    setFruitFlavors: (flavors: string[], bottleNumber = 1) => 
+      setWineTastingResponse((prev) => ({
+        ...prev,
+        [bottleNumber]: {
+          ...prev[bottleNumber],
+          fruitFlavors: flavors
+        }
+      })),
+    setAcidityRating: (rating: number, bottleNumber = 1) => 
+      setWineTastingResponse((prev) => ({
+        ...prev,
+        [bottleNumber]: {
+          ...prev[bottleNumber],
+          acidityRating: rating
+        }
+      })),
+    setAdditionalThoughts: (thoughts: string, bottleNumber = 1) => 
+      setWineTastingResponse((prev) => ({
+        ...prev,
+        [bottleNumber]: {
+          ...prev[bottleNumber],
+          additionalThoughts: thoughts
+        }
+      })),
     nextQuestion,
     previousQuestion,
     submitResponses,
