@@ -21,8 +21,8 @@ const LoadingScreen = () => {
           {/* Wine bottle */}
           <motion.div 
             className="absolute top-0 left-1/2 -ml-6"
-            initial={{ y: -20, rotate: -20 }}
-            animate={{ y: 0, rotate: -45 }}
+            initial={{ y: -20 }}
+            animate={{ y: 0, rotate: -25 }}
             transition={{ duration: 1.5, ease: "easeInOut" }}
           >
             <Wine size={48} className="text-purple-300" />

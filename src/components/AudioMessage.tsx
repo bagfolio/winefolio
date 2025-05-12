@@ -58,22 +58,22 @@ const AudioMessage: React.FC<AudioMessageProps> = ({ questionId }) => {
             </p>
           </div>
 
-          <div className="bg-black/30 rounded-lg p-3 flex items-center justify-between">
-            <Button 
-              onClick={handlePlayPause}
-              size="icon"
-              variant="ghost" 
-              className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white"
-            >
-              {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-            </Button>
-            <div className="flex-1 mx-3">
-              <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-purple-400 rounded-full" style={{ width: '0%' }}></div>
-              </div>
-            </div>
-            <span className="text-xs text-white/60">00:00</span>
-          </div>
+          <Button 
+            onClick={handlePlayPause}
+            size="lg"
+            variant="secondary" 
+            className="w-full flex items-center justify-center gap-2 mt-4 bg-white/10 hover:bg-white/20 text-white"
+          >
+            {isPlaying ? (
+              <>
+                <Pause size={20} /> Pause Audio
+              </>
+            ) : (
+              <>
+                <Play size={20} /> Play Audio
+              </>
+            )}
+          </Button>
           
           {/* Hidden audio element */}
           <audio 
