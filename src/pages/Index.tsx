@@ -5,7 +5,7 @@ import WineTastingFlow from '../components/WineTastingFlow';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 to-purple-950">
+    <div className="min-h-screen bg-gradient-to-b from-purple-950 to-black">
       <WineTastingProvider>
         <WineTastingFlow />
       </WineTastingProvider>

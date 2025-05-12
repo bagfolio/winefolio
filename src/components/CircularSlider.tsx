@@ -20,6 +20,13 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
   const isDragging = useRef(false);
   const [rotation, setRotation] = useState(0);
   
+  // Function to trigger haptic feedback
+  const triggerHapticFeedback = () => {
+    if (navigator.vibrate) {
+      navigator.vibrate(10); // 10ms vibration
+    }
+  };
+  
   useEffect(() => {
     // Convert value to rotation (0-360 degrees)
     const newRotation = ((value - min) / (max - min)) * 360;
@@ -61,6 +68,11 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
       // Ensure value is within bounds
       newValue = Math.max(min, Math.min(max, newValue));
       
+      // Trigger haptic feedback if the value changed
+      if (newValue !== value) {
+        triggerHapticFeedback();
+      }
+      
       onChange(newValue);
     }
   };
@@ -82,6 +94,10 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
       // Calculate new value based on rotation
       const range = max - min;
       const newValue = Math.round((degrees / 360) * range / step) * step + min;
+      
+      if (newValue !== value) {
+        triggerHapticFeedback();
+      }
       
       onChange(Math.max(min, Math.min(max, newValue)));
     }
@@ -128,6 +144,77 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
     );
   }
 
+  // Handle touch events for mobile
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    isDragging.current = true;
+    handleTouchMove(e);
+    
+    document.addEventListener('touchmove', handleTouchMoveDocument, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+  };
+  
+  const handleTouchMoveDocument = (e: TouchEvent) => {
+    e.preventDefault(); // Prevent scrolling when sliding
+    if (isDragging.current && sliderRef.current && e.touches[0]) {
+      const rect = sliderRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      const touchX = e.touches[0].clientX;
+      const touchY = e.touches[0].clientY;
+      
+      const angle = Math.atan2(touchY - centerY, touchX - centerX);
+      let degrees = angle * (180 / Math.PI) + 90;
+      
+      if (degrees < 0) {
+        degrees += 360;
+      }
+      
+      const range = max - min;
+      let newValue = Math.round((degrees / 360) * range / step) * step + min;
+      newValue = Math.max(min, Math.min(max, newValue));
+      
+      if (newValue !== value) {
+        triggerHapticFeedback();
+      }
+      
+      onChange(newValue);
+    }
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (isDragging.current && sliderRef.current && e.touches[0]) {
+      const rect = sliderRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      const touchX = e.touches[0].clientX;
+      const touchY = e.touches[0].clientY;
+      
+      const angle = Math.atan2(touchY - centerY, touchX - centerX);
+      let degrees = angle * (180 / Math.PI) + 90;
+      
+      if (degrees < 0) {
+        degrees += 360;
+      }
+      
+      const range = max - min;
+      const newValue = Math.round((degrees / 360) * range / step) * step + min;
+      
+      if (newValue !== value) {
+        triggerHapticFeedback();
+      }
+      
+      onChange(Math.max(min, Math.min(max, newValue)));
+    }
+  };
+  
+  const handleTouchEnd = () => {
+    isDragging.current = false;
+    document.removeEventListener('touchmove', handleTouchMoveDocument);
+    document.removeEventListener('touchend', handleTouchEnd);
+  };
+
   return (
     <div 
       className="circular-slider" 
@@ -157,6 +244,7 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
           background: `radial-gradient(circle, rgba(255,255,255,1) ${100 - fillPercentage}%, rgba(155,135,245,1) ${100 - fillPercentage}%)`
         }}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
       ></div>
       <div className="circular-slider-value">{value}/{max}</div>
       

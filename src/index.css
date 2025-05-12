@@ -5,33 +5,33 @@
 
 @layer base {
   :root {
-    --background: 260 50% 18%; /* Darkened background */
+    --background: 260 50% 12%; /* Darker background */
     --foreground: 0 0% 98%;
 
-    --card: 260 50% 18%; /* Darkened card */
+    --card: 260 50% 12%; /* Darker card */
     --card-foreground: 0 0% 98%;
 
-    --popover: 260 50% 18%; /* Darkened popover */
+    --popover: 260 50% 12%; /* Darker popover */
     --popover-foreground: 0 0% 98%;
 
-    --primary: 260 60% 50%;
+    --primary: 260 60% 45%;
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 260 30% 35%; /* Darkened secondary */
+    --secondary: 260 30% 25%; /* Darker secondary */
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 260 20% 35%; /* Darkened muted */
+    --muted: 260 20% 25%; /* Darker muted */
     --muted-foreground: 215 20.2% 84.1%;
 
-    --accent: 260 50% 40%; /* Darkened accent */
+    --accent: 260 50% 30%; /* Darker accent */
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 260 30% 35%; /* Darkened border */
-    --input: 260 30% 35%; /* Darkened input */
-    --ring: 260 50% 55%; /* Slightly darkened ring */
+    --border: 260 30% 25%; /* Darker border */
+    --input: 260 30% 25%; /* Darker input */
+    --ring: 260 50% 45%; /* Darker ring */
 
     --radius: 0.75rem;
   }
@@ -42,7 +42,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-gradient-to-b from-purple-900 to-purple-950 text-foreground min-h-screen; /* Darkened gradient */
+    @apply bg-gradient-to-b from-purple-950 to-black text-foreground min-h-screen; /* Darker gradient */
     font-family: 'Inter', sans-serif;
   }
 }
@@ -76,7 +76,7 @@
   height: 40px;
   background: white;
   border-radius: 50%;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
   transform: translate(-50%, -50%);
   cursor: pointer;
   z-index: 10;

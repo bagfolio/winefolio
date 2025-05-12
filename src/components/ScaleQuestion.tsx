@@ -5,6 +5,7 @@ import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
 import CircularSlider from './CircularSlider';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import WineFaq from './WineFaq';
 
 interface ScaleQuestionProps {
   questionId: number;
@@ -38,13 +39,14 @@ const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ questionId }) => {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto">
       <div className="w-full max-w-md">
-        <div className="mb-6">
-          <div className="inline-block bg-purple-800/70 rounded-full px-4 py-1 mb-6">
+        <div className="mb-4">
+          <div className="inline-block bg-purple-900/70 rounded-full px-4 py-1 mb-4">
             <span className="text-sm text-white">Question {questionId}</span>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-8">
+          <h2 className="text-2xl font-bold text-white mb-4">
             {question?.question}
           </h2>
+          <WineFaq currentQuestionId={questionId} />
         </div>
         
         <div className="my-6 py-4 relative">
@@ -60,7 +62,7 @@ const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ questionId }) => {
         <div className="flex justify-between mt-10">
           <Button
             onClick={previousQuestion}
-            className="flex items-center gap-2 bg-transparent hover:bg-purple-700/30 text-white"
+            className="flex items-center gap-2 bg-transparent hover:bg-purple-800/30 text-white"
           >
             <ArrowLeft size={16} />
             Previous
@@ -68,7 +70,7 @@ const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ questionId }) => {
           
           <Button
             onClick={nextQuestion}
-            className="flex items-center gap-2 bg-white hover:bg-gray-200 text-purple-900"
+            className="flex items-center gap-2 bg-white hover:bg-gray-200 text-purple-950"
           >
             Next
             <ArrowRight size={16} />
