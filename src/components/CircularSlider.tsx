@@ -1,5 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useCircularSliderDrag } from '@/hooks/useCircularSliderDrag';
+import { valueToRotation } from '@/utils/sliderUtils';
+import CircularSliderThumb from './CircularSliderThumb';
+import CircularSliderTrack from './CircularSliderTrack';
+import CircularSliderTicks from './CircularSliderTicks';
 
 interface CircularSliderProps {
   value: number;
@@ -17,169 +22,49 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
   step = 1,
 }) => {
   const sliderRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
   const [rotation, setRotation] = useState(0);
-  
-  // Function to trigger haptic feedback
-  const triggerHapticFeedback = () => {
-    if (navigator.vibrate) {
-      navigator.vibrate(10); // 10ms vibration
-    }
-  };
+  const sliderInstanceId = React.useMemo(() => 
+    `circular-slider-${Math.random().toString(36).substring(2, 11)}`,
+    []
+  );
   
   // Update rotation whenever the value changes
   useEffect(() => {
-    // Convert value to rotation (0-360 degrees)
-    const newRotation = ((value - min) / (max - min)) * 360;
-    setRotation(newRotation);
+    setRotation(valueToRotation(value, min, max));
   }, [value, min, max]);
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    isDragging.current = true;
-    handleMouseMove(e);
-    
-    document.addEventListener('mousemove', handleMouseMoveDocument);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
+  const { handleMouseDown, handleTouchStart } = useCircularSliderDrag({
+    min,
+    max,
+    step,
+    value,
+    onChange,
+    sliderRef
+  });
   
-  const handleMouseMoveDocument = (e: MouseEvent) => {
-    if (isDragging.current && sliderRef.current) {
-      updateValueFromEvent(e.clientX, e.clientY);
-    }
-  };
-  
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragging.current && sliderRef.current) {
-      updateValueFromEvent(e.clientX, e.clientY);
-    }
-  };
-  
-  const updateValueFromEvent = (clientX: number, clientY: number) => {
-    if (!sliderRef.current) return;
-    
-    const rect = sliderRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    
-    // Calculate angle
-    const angle = Math.atan2(clientY - centerY, clientX - centerX);
-    let degrees = angle * (180 / Math.PI) + 90; // +90 to start from top
-    
-    if (degrees < 0) {
-      degrees += 360;
-    }
-    
-    // Calculate new value based on rotation and round to step
-    const range = max - min;
-    let newVal = min + (degrees / 360) * range;
-    newVal = Math.max(min, Math.min(max, newVal));
-    let newValue = Math.round(newVal / step) * step;
-    
-    // Set the new value if it's different
-    if (Math.abs(newValue - value) > 0.001) {
-      triggerHapticFeedback();
-      onChange(newValue);
-    }
-  };
-  
-  const handleMouseUp = () => {
-    isDragging.current = false;
-    document.removeEventListener('mousemove', handleMouseMoveDocument);
-    document.removeEventListener('mouseup', handleMouseUp);
-  };
-
-  // Handle touch events for mobile
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    isDragging.current = true;
-    handleTouchMove(e);
-    
-    document.addEventListener('touchmove', handleTouchMoveDocument, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd);
-  };
-  
-  const handleTouchMoveDocument = (e: TouchEvent) => {
-    e.preventDefault(); // Prevent scrolling when sliding
-    if (isDragging.current && sliderRef.current && e.touches[0]) {
-      updateValueFromEvent(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  };
-  
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (isDragging.current && sliderRef.current && e.touches[0]) {
-      updateValueFromEvent(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  };
-  
-  const handleTouchEnd = () => {
-    isDragging.current = false;
-    document.removeEventListener('touchmove', handleTouchMoveDocument);
-    document.removeEventListener('touchend', handleTouchEnd);
-  };
-
   // Calculate thumb position
   const radius = 150 - 20; // subtract half of thumb size
-  const theta = ((rotation - 90) * Math.PI) / 180; // convert to radians and adjust to start from top
-  const thumbX = 150 + radius * Math.cos(theta);
-  const thumbY = 150 + radius * Math.sin(theta);
-  
-  // Calculate ticks
-  const ticks = [];
-  const tickCount = max - min + 1;
-  for (let i = 0; i < tickCount; i++) {
-    const tickRotation = (i / (tickCount - 1)) * 360;
-    const tickTheta = ((tickRotation - 90) * Math.PI) / 180;
-    const innerRadius = radius - 10;
-    const outerRadius = radius + 5;
-    const tickX1 = 150 + innerRadius * Math.cos(tickTheta);
-    const tickY1 = 150 + innerRadius * Math.sin(tickTheta);
-    const tickX2 = 150 + outerRadius * Math.cos(tickTheta);
-    const tickY2 = 150 + outerRadius * Math.sin(tickTheta);
-    
-    ticks.push(
-      <line
-        key={i}
-        x1={tickX1}
-        y1={tickY1}
-        x2={tickX2}
-        y2={tickY2}
-        stroke="rgba(255,255,255,0.5)"
-        strokeWidth={i % 5 === 0 ? "2" : "1"}
-      />
-    );
-  }
 
   return (
     <div 
       className="circular-slider" 
       ref={sliderRef}
-      id={`circular-slider-${Math.random().toString(36).substring(2, 11)}`}
+      id={sliderInstanceId}
     >
       <div className="circular-slider-bg">
         <svg width="300" height="300" viewBox="0 0 300 300">
-          <circle cx="150" cy="150" r={radius} stroke="rgba(255,255,255,0.2)" strokeWidth="4" fill="none" />
-          {ticks}
-          <circle 
-            cx="150" 
-            cy="150" 
-            r={radius} 
-            stroke="white" 
-            strokeWidth="4" 
-            fill="none"
-            strokeDasharray={`${(rotation / 360) * (2 * Math.PI * radius)} ${2 * Math.PI * radius}`}
-            transform="rotate(-90, 150, 150)"
-          />
+          <CircularSliderTrack radius={radius} rotation={rotation} />
+          <CircularSliderTicks min={min} max={max} radius={radius} />
         </svg>
       </div>
-      <div 
-        className="circular-slider-thumb" 
-        style={{ 
-          left: `${thumbX}px`, 
-          top: `${thumbY}px`,
-          background: `radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(155,135,245,1) 75%)`
-        }}
+      
+      <CircularSliderThumb 
+        rotation={rotation} 
+        radius={radius}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
-      ></div>
+      />
+      
       <div className="circular-slider-value">{value}/{max}</div>
       
       <div className="absolute bottom-[-40px] left-0 w-full flex justify-between text-white">
