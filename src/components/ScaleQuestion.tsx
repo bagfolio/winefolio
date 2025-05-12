@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
@@ -23,27 +23,33 @@ const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ questionId }) => {
   const question = questions.find(q => q.id === questionId);
   const bottleNumber = question?.bottleNumber || 1;
   
-  const getValue = () => {
-    // Get rating for the current bottle
+  // Use local state to track the slider value
+  const [sliderValue, setSliderValue] = useState(5);
+  
+  // Initialize slider value from context when component mounts or when question changes
+  useEffect(() => {
+    let initialValue = 5;
+    
     if (questionId === 2 || questionId === 9) { // Overall rating questions
-      return wineTastingResponse[bottleNumber]?.rating || 5;
+      initialValue = wineTastingResponse[bottleNumber]?.rating || 5;
+    } else if (questionId === 5 || questionId === 12) { // Acidity rating questions
+      initialValue = wineTastingResponse[bottleNumber]?.acidityRating || 5;
     }
-    if (questionId === 5 || questionId === 12) { // Acidity rating questions
-      return wineTastingResponse[bottleNumber]?.acidityRating || 5;
-    }
-    return 5; // Default
-  };
+    
+    setSliderValue(initialValue);
+  }, [questionId, bottleNumber, wineTastingResponse]);
   
   const handleChange = (value: number) => {
+    // Update local state
+    setSliderValue(value);
+    
+    // Update context
     if (questionId === 2 || questionId === 9) { // Overall rating
       setRating(value, bottleNumber);
     } else if (questionId === 5 || questionId === 12) { // Acidity rating
       setAcidityRating(value, bottleNumber);
     }
   };
-  
-  // Get the current value for this specific slider
-  const currentValue = getValue();
   
   return (
     <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto">
@@ -68,7 +74,7 @@ const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ questionId }) => {
         
         <div className="my-6 py-4 relative">
           <CircularSlider 
-            value={currentValue}
+            value={sliderValue}
             onChange={handleChange}
             min={0}
             max={10}

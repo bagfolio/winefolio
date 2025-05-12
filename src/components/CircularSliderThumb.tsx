@@ -23,7 +23,8 @@ const CircularSliderThumb: React.FC<CircularSliderThumbProps> = ({
       style={{ 
         left: `${x}px`, 
         top: `${y}px`,
-        background: `radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(155,135,245,1) 75%)`
+        background: `radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(155,135,245,1) 75%)`,
+        touchAction: 'none' // Ensure touch events don't trigger scrolling
       }}
       onMouseDown={onMouseDown}
       onTouchStart={onTouchStart}

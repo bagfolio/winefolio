@@ -33,6 +33,7 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
     setRotation(valueToRotation(value, min, max));
   }, [value, min, max]);
 
+  // Pass a stable reference for the value that will be passed to the drag hook
   const { handleMouseDown, handleTouchStart } = useCircularSliderDrag({
     min,
     max,
@@ -47,9 +48,10 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
 
   return (
     <div 
-      className="circular-slider relative" 
+      className="circular-slider relative"
       ref={sliderRef}
       id={sliderInstanceId}
+      data-value={value}
     >
       <div className="circular-slider-bg">
         <svg width="300" height="300" viewBox="0 0 300 300">
