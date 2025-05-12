@@ -22,7 +22,7 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
   step = 1,
 }) => {
   const sliderRef = useRef<HTMLDivElement>(null);
-  const [rotation, setRotation] = useState(0);
+  const [rotation, setRotation] = useState(valueToRotation(value, min, max));
   const sliderInstanceId = React.useMemo(() => 
     `circular-slider-${Math.random().toString(36).substring(2, 11)}`,
     []
@@ -47,7 +47,7 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
 
   return (
     <div 
-      className="circular-slider" 
+      className="circular-slider relative" 
       ref={sliderRef}
       id={sliderInstanceId}
     >
@@ -65,7 +65,9 @@ const CircularSlider: React.FC<CircularSliderProps> = ({
         onTouchStart={handleTouchStart}
       />
       
-      <div className="circular-slider-value">{value}/{max}</div>
+      <div className="circular-slider-value absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-xl font-bold">
+        {value}/{max}
+      </div>
       
       <div className="absolute bottom-[-40px] left-0 w-full flex justify-between text-white">
         <span>{min} = Yuck</span>

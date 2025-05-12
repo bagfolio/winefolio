@@ -19,7 +19,7 @@ const CircularSliderThumb: React.FC<CircularSliderThumbProps> = ({
   
   return (
     <div 
-      className="circular-slider-thumb" 
+      className="circular-slider-thumb absolute w-10 h-10 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing z-10 transform -translate-x-1/2 -translate-y-1/2 touch-action-none" 
       style={{ 
         left: `${x}px`, 
         top: `${y}px`,

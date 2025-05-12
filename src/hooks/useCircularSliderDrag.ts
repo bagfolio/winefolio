@@ -1,5 +1,5 @@
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { triggerHapticFeedback } from '@/utils/sliderUtils';
 
 interface UseCircularSliderDragProps {
@@ -21,7 +21,9 @@ export const useCircularSliderDrag = ({
 }: UseCircularSliderDragProps) => {
   const isDragging = useRef(false);
   
-  const updateValueFromEvent = (clientX: number, clientY: number) => {
+  // Make updateValueFromEvent a callback that will be stable across renders
+  // but will always use the latest props
+  const updateValueFromEvent = useCallback((clientX: number, clientY: number) => {
     if (!sliderRef.current) return;
     
     const rect = sliderRef.current.getBoundingClientRect();
@@ -47,29 +49,43 @@ export const useCircularSliderDrag = ({
       triggerHapticFeedback();
       onChange(newValue);
     }
-  };
+  }, [min, max, step, value, onChange, sliderRef]);
   
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  // Create event handlers as callbacks to ensure they always use the latest version of updateValueFromEvent
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (isDragging.current) {
+      updateValueFromEvent(e.clientX, e.clientY);
+    }
+  }, [updateValueFromEvent]);
+  
+  const handleMouseUp = useCallback(() => {
+    isDragging.current = false;
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseMove]);
+  
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    e.preventDefault(); // Prevent scrolling when sliding
+    if (isDragging.current && e.touches[0]) {
+      updateValueFromEvent(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, [updateValueFromEvent]);
+  
+  const handleTouchEnd = useCallback(() => {
+    isDragging.current = false;
+    document.removeEventListener('touchmove', handleTouchMove);
+    document.removeEventListener('touchend', handleTouchEnd);
+  }, [handleTouchMove]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     isDragging.current = true;
     updateValueFromEvent(e.clientX, e.clientY);
     
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  };
+  }, [updateValueFromEvent, handleMouseMove, handleMouseUp]);
   
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging.current) {
-      updateValueFromEvent(e.clientX, e.clientY);
-    }
-  };
-  
-  const handleMouseUp = () => {
-    isDragging.current = false;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     isDragging.current = true;
     if (e.touches[0]) {
       updateValueFromEvent(e.touches[0].clientX, e.touches[0].clientY);
@@ -77,22 +93,9 @@ export const useCircularSliderDrag = ({
     
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
     document.addEventListener('touchend', handleTouchEnd);
-  };
+  }, [updateValueFromEvent, handleTouchMove, handleTouchEnd]);
   
-  const handleTouchMove = (e: TouchEvent) => {
-    e.preventDefault(); // Prevent scrolling when sliding
-    if (isDragging.current && e.touches[0]) {
-      updateValueFromEvent(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  };
-  
-  const handleTouchEnd = () => {
-    isDragging.current = false;
-    document.removeEventListener('touchmove', handleTouchMove);
-    document.removeEventListener('touchend', handleTouchEnd);
-  };
-
-  // Cleanup event listeners
+  // Setup and cleanup event listeners
   useEffect(() => {
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
@@ -100,7 +103,7 @@ export const useCircularSliderDrag = ({
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
     };
-  }, []);
+  }, [handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
   
   return { handleMouseDown, handleTouchStart };
 };

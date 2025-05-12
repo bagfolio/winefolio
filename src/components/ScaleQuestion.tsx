@@ -42,6 +42,9 @@ const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ questionId }) => {
     }
   };
   
+  // Get the current value for this specific slider
+  const currentValue = getValue();
+  
   return (
     <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto">
       <div className="w-full max-w-md">
@@ -65,7 +68,7 @@ const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ questionId }) => {
         
         <div className="my-6 py-4 relative">
           <CircularSlider 
-            value={getValue()} 
+            value={currentValue}
             onChange={handleChange}
             min={0}
             max={10}
