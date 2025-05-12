@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { GlassWater, Wine } from 'lucide-react';
+import { Wine } from 'lucide-react';
 
 const LoadingScreen = () => {
   const [fillLevel, setFillLevel] = useState(0);
@@ -20,30 +20,32 @@ const LoadingScreen = () => {
         <div className="relative mb-12">
           {/* Wine bottle */}
           <motion.div 
-            className="absolute -top-20 left-1/2 -ml-6"
+            className="absolute -top-24 left-1/2 -ml-6"
             initial={{ y: -20, rotate: -20 }}
-            animate={{ y: -10, rotate: -45 }}
-            transition={{ duration: 2, ease: "easeInOut" }}
+            animate={{ y: 0, rotate: -45 }}
+            transition={{ duration: 1.5, ease: "easeInOut" }}
           >
             <Wine size={48} className="text-purple-300" />
           </motion.div>
           
-          {/* Wine glass */}
-          <div className="relative">
-            <GlassWater size={120} className="text-white/20" />
-            
-            {/* Wine filling animation */}
-            <motion.div 
-              className="absolute bottom-0 left-0 w-full overflow-hidden"
-              style={{ height: "70%" }}
-            >
+          {/* Wine glass with stem */}
+          <div className="relative w-20 h-32">
+            {/* Glass bowl */}
+            <div className="absolute top-0 left-0 w-20 h-14 border-2 border-white/30 rounded-b-full overflow-hidden">
+              {/* Wine filling animation */}
               <motion.div 
-                className="absolute bottom-0 w-full bg-gradient-to-tr from-purple-800 to-purple-500 rounded-b-full"
+                className="absolute bottom-0 w-full bg-gradient-to-tr from-purple-800 to-purple-500"
                 initial={{ height: "0%" }}
                 animate={{ height: `${fillLevel}%` }}
-                transition={{ duration: 2, ease: "easeOut" }}
+                transition={{ duration: 2, ease: "easeOut", delay: 0.5 }}
               />
-            </motion.div>
+            </div>
+            
+            {/* Glass stem */}
+            <div className="absolute top-14 left-1/2 -ml-1 w-2 h-12 bg-white/30"></div>
+            
+            {/* Glass base */}
+            <div className="absolute bottom-0 left-1/2 -ml-5 w-10 h-2 bg-white/30 rounded-full"></div>
           </div>
         </div>
         
