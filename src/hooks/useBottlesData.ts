@@ -23,6 +23,23 @@ export const useBottlesData = (packageInfo: PackageInfo | null) => {
         
         setLoading(true);
         try {
+          // Test Supabase connection first
+          const { error: connectionTest } = await supabase
+            .from('Packages')
+            .select('name')
+            .limit(1);
+            
+          if (connectionTest) {
+            console.error('Supabase connection error:', connectionTest);
+            toast({
+              title: 'Database Connection Error',
+              description: 'Unable to connect to the database. Please check your network connection.',
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+          }
+          
           // Fetch all bottles, ordered by sequence
           const { data: allBottles, error } = await supabase
             .from('Bottles')
