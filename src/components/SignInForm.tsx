@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PackageInfo } from '../types';
 
 const SignInForm = () => {
   const { setUserInfo, nextQuestion, setLoading, setPackageInfo } = useWineTasting();
@@ -19,7 +20,7 @@ const SignInForm = () => {
   const [email, setEmail] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [errors, setErrors] = useState({ name: '', email: '', sessionId: '' });
-  const [availablePackages, setAvailablePackages] = useState([]);
+  const [availablePackages, setAvailablePackages] = useState<PackageInfo[]>([]);
   const [fetchingPackages, setFetchingPackages] = useState(true);
   const { toast } = useToast();
   
@@ -30,7 +31,7 @@ const SignInForm = () => {
         setFetchingPackages(true);
         console.log('Fetching package data from Supabase...');
         
-        // Direct query for Packages table - use correct case as defined in types
+        // Use correct capitalization for Packages table
         const { data, error } = await supabase
           .from('Packages')
           .select('*');
@@ -46,17 +47,28 @@ const SignInForm = () => {
           });
         } else if (data && data.length > 0) {
           console.log('Successfully fetched packages:', data);
-          setAvailablePackages(data);
+          
+          // Transform the data to match PackageInfo type
+          const formattedPackages: PackageInfo[] = data.map(pkg => ({
+            name: pkg.name || 'Unnamed Package',
+            package_id: pkg.package_id || 'NO_ID',
+            bottles: pkg.bottles || '',
+            sommeliers: pkg.sommeliers || '',
+            tastings: pkg.tastings || '',
+            hosts: pkg.hosts || ''
+          }));
+          
+          setAvailablePackages(formattedPackages);
           
           // Pre-fill with the first package ID if available
-          if (data[0]?.package_id) {
-            setSessionId(data[0].package_id);
+          if (formattedPackages[0]?.package_id) {
+            setSessionId(formattedPackages[0].package_id);
           }
         } else {
           console.log('No packages found in database');
           
           // Add a dummy package for testing if none are found
-          const dummyPackages = [
+          const dummyPackages: PackageInfo[] = [
             { 
               name: 'Demo Wine Tasting', 
               package_id: 'DEMO001',
@@ -84,7 +96,7 @@ const SignInForm = () => {
         });
         
         // Provide fallback data for testing
-        const fallbackPackage = { 
+        const fallbackPackage: PackageInfo = { 
           name: 'Fallback Package', 
           package_id: 'FALLBACK001',
           bottles: 'Demo Wine 1,Demo Wine 2',
@@ -146,10 +158,10 @@ const SignInForm = () => {
         // Try to look for the package in the database
         console.log('Looking for package with ID:', trimmedSessionId);
         
-        // Use Packages table name with correct case
+        // Use correct case for table name in query
         const { data: packageData, error: packageError } = await supabase
           .from('Packages')
-          .select('*')
+          .select()
           .eq('package_id', trimmedSessionId)
           .maybeSingle();
         
@@ -167,13 +179,23 @@ const SignInForm = () => {
         }
         
         // If no package found, check if it's one of our fallback/demo packages
-        let finalPackageData = packageData;
+        let finalPackage: PackageInfo | null = null;
         
-        if (!finalPackageData) {
+        if (packageData) {
+          // Convert database result to PackageInfo type
+          finalPackage = {
+            name: packageData.name || 'Unknown Package',
+            package_id: packageData.package_id || '',
+            bottles: packageData.bottles || '',
+            sommeliers: packageData.sommeliers || '',
+            tastings: packageData.tastings || '',
+            hosts: packageData.hosts || ''
+          };
+        } else {
           console.log('No package found in database, checking local packages');
-          finalPackageData = availablePackages.find(pkg => pkg.package_id === trimmedSessionId);
+          const localPackage = availablePackages.find(pkg => pkg.package_id === trimmedSessionId);
           
-          if (!finalPackageData) {
+          if (!localPackage) {
             console.log('No package found with ID:', trimmedSessionId);
             toast({
               title: 'Invalid Session Code',
@@ -183,11 +205,23 @@ const SignInForm = () => {
             setLoading(false);
             return;
           }
-          console.log('Found package in local cache:', finalPackageData);
+          
+          console.log('Found package in local cache:', localPackage);
+          finalPackage = localPackage;
+        }
+        
+        if (!finalPackage) {
+          toast({
+            title: 'Error',
+            description: 'Could not find a valid package.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
         }
         
         // We found a package, store it in context
-        setPackageInfo(finalPackageData);
+        setPackageInfo(finalPackage);
         
         // Store user info
         setUserInfo({ name, email, sessionId: trimmedSessionId });
