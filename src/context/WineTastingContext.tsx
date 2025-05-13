@@ -29,7 +29,7 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
   } = useWineTastingState([]);
   
   // Load bottles data when package info changes
-  const { bottlesData, loading, setLoading } = useBottlesData(packageInfo);
+  const { bottlesData, loading, setLoading, setBottlesData } = useBottlesData(packageInfo);
   
   // State for dynamic questions
   const [dynamicQuestions, setDynamicQuestions] = useState<any[]>([]);
@@ -57,6 +57,7 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
     setLoading,
     setUserInfo: (info: UserInfo) => setUserInfo(info),
     setPackageInfo: (info: PackageInfo) => setPackageInfo(info),
+    setBottlesData, // Added this line
     setInitialThoughts,
     setRating,
     setFruitFlavors,

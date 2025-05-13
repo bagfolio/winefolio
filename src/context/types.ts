@@ -23,6 +23,7 @@ export interface WineTastingContextType {
   setLoading: (isLoading: boolean) => void;
   setUserInfo: (info: UserInfo) => void;
   setPackageInfo: (info: PackageInfo) => void;
+  setBottlesData: (bottles: BottleData[]) => void;  // Added this line
   setInitialThoughts: (thoughts: string, bottleNumber?: number) => void;
   setRating: (rating: number, bottleNumber?: number) => void;
   setFruitFlavors: (flavors: string[], bottleNumber?: number) => void;
