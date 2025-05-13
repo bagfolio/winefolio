@@ -88,14 +88,21 @@ export const useDataPreload = () => {
         return { 
           success: true, 
           questions: [], 
-          message: 'No specific questions found for these bottles, will use default questions' 
+          message: 'No specific questions found for these bottles, will use default questions',
+          totalQuestions: 0,
+          bottlesCount: bottles.length
         };
       }
       
       // Generate dynamic questions based on bottle and question data
       const dynamicQuestions = generateDynamicQuestionsFromData(bottles, relevantQuestions);
       
-      return { success: true, questions: dynamicQuestions };
+      return { 
+        success: true, 
+        questions: dynamicQuestions,
+        totalQuestions: relevantQuestions.length,
+        bottlesCount: bottles.length
+      };
     } catch (err: any) {
       console.error('❌ Failed to fetch questions:', err);
       return { success: false, error: err.message || 'Unknown error occurred' };
@@ -251,17 +258,23 @@ export const useDataPreload = () => {
         setPreloading(false);
         return { 
           success: true, 
-          message: 'Data preloaded with default questions. Ready to start tasting.'
+          message: `Data preloaded with default questions for ${bottles.length} bottles. Ready to start tasting.`
         };
       }
       
-      console.log(`✅ Successfully preloaded ${questionsResult.questions.length} questions`);
+      const bottlesCount = questionsResult.bottlesCount || bottles.length;
+      const questionsCount = questionsResult.totalQuestions || 0;
+      
+      console.log(`✅ Successfully preloaded ${questionsResult.questions.length} questions for ${bottlesCount} bottles`);
       
       // Data preload successful
       setPreloadSuccess(true);
       setPreloading(false);
       toast.success('Data preloaded successfully. Ready to start tasting.');
-      return { success: true, message: 'Data preloaded successfully. Ready to start tasting.' };
+      return { 
+        success: true, 
+        message: `Data preloaded successfully: ${bottlesCount} bottles and ${questionsCount} questions loaded. Ready to start tasting.` 
+      };
       
     } catch (error: any) {
       console.error('❌ Error during data preload:', error);

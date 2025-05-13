@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -206,7 +207,7 @@ const SignInForm = () => {
     try {
       const result = await preloadData(selectedPackage);
       if (result.success) {
-        setConnectionStatus(prev => `${prev}\n✅ Data preloaded successfully: ${result.message}`);
+        setConnectionStatus(prev => `${prev}\n✅ Data preload successful: ${result.message}`);
       } else {
         setConnectionStatus(prev => `${prev}\n❌ Data preload failed: ${result.message}`);
       }
