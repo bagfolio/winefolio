@@ -12,72 +12,101 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
 
   useEffect(() => {
     const fetchQuestionsForBottles = async () => {
-      if (!bottles || bottles.length === 0) return;
+      if (!bottles || bottles.length === 0) {
+        console.log('❌ No bottles provided to useBottleQuestions');
+        return;
+      }
       
       try {
         setIsLoading(true);
+        console.log(`🍷 Fetching questions for ${bottles.length} bottles...`);
+        
         // Collect all bottle names for the query
         const bottleNames = bottles.map(bottle => bottle.Name).filter(name => name !== null) as string[];
         
         if (bottleNames.length === 0) {
-          console.warn('No valid bottle names to fetch questions for');
+          console.warn('⚠️ No valid bottle names to fetch questions for');
+          setIsLoading(false);
           return;
         }
         
-        console.log('Fetching questions for bottles:', bottleNames);
+        console.log('🍾 Fetching questions for bottles:', bottleNames);
         
-        // Fetch all questions first to debug
+        // Fetch all questions to debug
+        console.log('🔍 Fetching all available questions from database...');
         const { data: allQuestions, error: allQuestionsError } = await supabase
           .from('Questions')
           .select('*');
           
         if (allQuestionsError) {
-          console.error('Error fetching all questions:', allQuestionsError);
+          console.error('❌ Error fetching all questions:', allQuestionsError);
+          toast.error('Failed to load question data');
+          setIsLoading(false);
+          return;
         } else {
-          console.log('All available questions in database:', allQuestions);
+          console.log(`✅ Successfully fetched ${allQuestions?.length || 0} questions from database`);
         }
         
-        // Fetch questions related to these bottles - try without the 'in' operator
-        const { data: questionData, error } = await supabase
-          .from('Questions')
-          .select('*');
-          
-        if (error) {
-          console.error('Error fetching questions:', error);
-          toast.error('Failed to load bottle questions');
-          return;
+        // Debug the structure of questions
+        if (allQuestions && allQuestions.length > 0) {
+          console.log('📝 Sample question structure:', JSON.stringify(allQuestions[0], null, 2));
         }
         
         // Manually filter questions by bottle name
-        const relevantQuestions = questionData?.filter(q => {
+        console.log('🔍 Filtering questions by bottle name...');
+        const relevantQuestions = allQuestions?.filter(q => {
           if (!q.Bottles) return false;
+          
           // Check if any of our bottle names are mentioned in the question's Bottles field
-          return bottleNames.some(name => 
-            q.Bottles?.includes(name)
-          );
+          const matches = bottleNames.some(name => {
+            const match = q.Bottles?.includes(name);
+            return match;
+          });
+          
+          return matches;
+        });
+        
+        console.log(`📊 Found ${relevantQuestions?.length || 0} relevant questions for these bottles`);
+        
+        // Count questions per bottle
+        bottleNames.forEach(name => {
+          const questionsForBottle = relevantQuestions?.filter(q => q.Bottles?.includes(name)) || [];
+          console.log(`🍷 Bottle "${name}": ${questionsForBottle.length} questions`);
+          
+          // Group by question type
+          const introQuestions = questionsForBottle.filter(q => q["Question Set Type"] === "Intro").length;
+          const deepQuestions = questionsForBottle.filter(q => q["Question Set Type"] === "Deep Dive").length;
+          const finalQuestions = questionsForBottle.filter(q => q["Question Set Type"] === "Final").length;
+          
+          console.log(`  - Intro questions: ${introQuestions}`);
+          console.log(`  - Deep dive questions: ${deepQuestions}`);
+          console.log(`  - Final questions: ${finalQuestions}`);
         });
         
         if (!relevantQuestions || relevantQuestions.length === 0) {
-          console.warn('No questions found for the selected bottles after filtering');
-          console.log('Looking for questions for bottles:', bottleNames);
-          console.log('Available questions:', questionData?.map(q => ({bottle: q.Bottles, text: q["Question Text"]})));
+          console.warn('⚠️ No questions found for the selected bottles after filtering');
+          console.log('🔍 Looking for questions for bottles:', bottleNames);
+          
+          console.log('📝 Using default questions instead...');
           // Continue with default questions
           const defaultQuestions = generateDynamicQuestionsFromData(bottles, []);
           setDynamicQuestions(defaultQuestions);
+          setIsLoading(false);
           return;
         }
         
-        console.log('Fetched relevant questions data:', relevantQuestions);
-        
         // Map the questions to the bottles and generate dynamic questions
+        console.log('🔄 Generating questions for the tasting flow...');
         const mappedQuestions = generateDynamicQuestionsFromData(bottles, relevantQuestions);
+        console.log(`✅ Generated ${mappedQuestions.length} questions for the tasting flow`);
         setDynamicQuestions(mappedQuestions);
         
       } catch (err) {
-        console.error('Failed to fetch questions:', err);
+        console.error('❌ Failed to fetch questions:', err);
         toast.error('An error occurred while loading questions');
         
         // Fall back to default questions
+        console.log('📝 Falling back to default questions...');
         const defaultQuestions = generateDynamicQuestionsFromData(bottles, []);
         setDynamicQuestions(defaultQuestions);
       } finally {
@@ -86,12 +115,14 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
     };
 
     if (bottles.length > 0) {
+      console.log('🚀 Initiating question fetch for bottles:', bottles.map(b => b.Name));
       fetchQuestionsForBottles();
     }
   }, [bottles]);
 
   // Function to generate dynamic questions based on bottle and question data
   const generateDynamicQuestionsFromData = (bottles: BottleData[], questionData: any[]): Question[] => {
+    console.log('📝 Generating dynamic questions...');
     const dynamicQuestions: Question[] = [];
     
     // Start with signin question
@@ -106,6 +137,8 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
     bottles.forEach((bottle, bottleIndex) => {
       const bottleNumber = bottleIndex + 1;
       const bottleName = bottle.Name || `Bottle ${bottleNumber}`;
+      
+      console.log(`📝 Generating questions for bottle #${bottleNumber}: ${bottleName}`);
       
       // Add bottle interlude
       dynamicQuestions.push({
@@ -122,9 +155,11 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
         (q.Bottles && q.Bottles.includes(bottleName))
       );
       
+      console.log(`📊 Found ${bottleQuestions.length} custom questions for bottle "${bottleName}"`);
+      
       // Add intro questions
       const introQ = bottleQuestions.find(q => q["Question Set Type"] === "Intro");
-      dynamicQuestions.push({
+      const introQuestion = {
         id: 100 + (bottleNumber * 10) + 1,
         type: getQuestionType(introQ?.["Response Type"] || "text"),
         question: introQ?.["Question Text"] || 
@@ -132,11 +167,14 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
         description: getJsonProperty(bottle["Intro Questions"], 'description', 'Share your first impressions'),
         options: parseOptions(introQ?.choices),
         bottleNumber
-      });
+      };
+      
+      console.log(`📝 Added intro question for bottle #${bottleNumber}: ${introQuestion.question}`);
+      dynamicQuestions.push(introQuestion);
       
       // Add deep dive questions  
       const deepQ = bottleQuestions.find(q => q["Question Set Type"] === "Deep Dive");
-      dynamicQuestions.push({
+      const deepQuestion = {
         id: 100 + (bottleNumber * 10) + 2,
         type: getQuestionType(deepQ?.["Response Type"] || "scale"),
         question: deepQ?.["Question Text"] || 
@@ -144,10 +182,13 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
         description: getJsonProperty(bottle["Deep Question"], 'description', 'Rate from 1 (poor) to 10 (excellent)'),
         options: parseOptions(deepQ?.choices),
         bottleNumber
-      });
+      };
+      
+      console.log(`📝 Added deep question for bottle #${bottleNumber}: ${deepQuestion.question}`);
+      dynamicQuestions.push(deepQuestion);
       
       // Add flavor questions (always multiple choice)
-      dynamicQuestions.push({
+      const flavorQuestion = {
         id: 100 + (bottleNumber * 10) + 3,
         type: 'multipleChoice',
         question: 'What fruit flavors do you detect in this wine?',
@@ -157,11 +198,14 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
           'Plum', 'Blackberry', 'Currant', 'Other'
         ],
         bottleNumber
-      });
+      };
+      
+      console.log(`📝 Added flavor question for bottle #${bottleNumber}`);
+      dynamicQuestions.push(flavorQuestion);
       
       // Add final questions
       const finalQ = bottleQuestions.find(q => q["Question Set Type"] === "Final");
-      dynamicQuestions.push({
+      const finalQuestion = {
         id: 100 + (bottleNumber * 10) + 4,
         type: getQuestionType(finalQ?.["Response Type"] || "text"),
         question: finalQ?.["Question Text"] || 
@@ -169,7 +213,10 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
         description: getJsonProperty(bottle["Final Questions"], 'description', 'Share your final impressions'),
         options: parseOptions(finalQ?.choices),
         bottleNumber
-      });
+      };
+      
+      console.log(`📝 Added final question for bottle #${bottleNumber}: ${finalQuestion.question}`);
+      dynamicQuestions.push(finalQuestion);
     });
     
     // Add final thanks screen
@@ -180,7 +227,7 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
       description: 'Your responses have been recorded.'
     });
     
-    console.log('Generated dynamic questions:', dynamicQuestions);
+    console.log(`✅ Successfully created ${dynamicQuestions.length} questions for the tasting flow`);
     return dynamicQuestions;
   };
 
