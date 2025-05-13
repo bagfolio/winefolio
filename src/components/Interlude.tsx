@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
 import { ArrowLeft, ArrowRight, Wine } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 
 interface InterludeProps {
@@ -19,19 +19,25 @@ const Interlude: React.FC<InterludeProps> = ({ questionId }) => {
   // Mark this interlude as viewed in Supabase
   useEffect(() => {
     const saveInterludeView = async () => {
+      if (!isSupabaseConfigured()) return;
+      
       if (sessionId && currentSession?.dbQuestionId) {
-        const { error } = await supabase
-          .from('user_responses')
-          .upsert({
-            user_id: (await supabase.auth.getUser()).data.user?.id || '',
-            session_id: sessionId,
-            question_id: currentSession.dbQuestionId,
-            bottle_id: currentSession.dbBottleId || null,
-            response_text: 'interlude_viewed',
-          }, { onConflict: 'user_id, session_id, question_id' });
-          
-        if (error) {
-          console.error("Error saving interlude view:", error);
+        try {
+          const { error } = await supabase
+            .from('user_responses')
+            .upsert({
+              user_id: 'demo-user',
+              session_id: sessionId,
+              question_id: currentSession.dbQuestionId,
+              bottle_id: currentSession.dbBottleId || null,
+              response_text: 'interlude_viewed',
+            }, { onConflict: 'user_id, session_id, question_id' });
+              
+          if (error) {
+            console.error("Error saving interlude view:", error);
+          }
+        } catch (error) {
+          console.error("Error in saveInterludeView:", error);
         }
       }
     };

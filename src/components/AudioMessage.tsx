@@ -5,7 +5,7 @@ import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
 import { ArrowLeft, ArrowRight, Play, Pause, Volume2, Wine } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 
 interface AudioMessageProps {
@@ -18,11 +18,16 @@ const AudioMessage: React.FC<AudioMessageProps> = ({ questionId }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [mediaData, setMediaData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchMediaData = async () => {
+      if (!isSupabaseConfigured()) {
+        setLoading(false);
+        return;
+      }
+      
       if (sessionId && currentSession?.dbQuestionId) {
         try {
           setLoading(true);
@@ -76,19 +81,25 @@ const AudioMessage: React.FC<AudioMessageProps> = ({ questionId }) => {
   // Record that the user has listened to this audio
   useEffect(() => {
     const recordAudioInteraction = async () => {
+      if (!isSupabaseConfigured()) return;
+      
       if (sessionId && currentSession?.dbQuestionId) {
-        const { error } = await supabase
-          .from('user_responses')
-          .upsert({
-            user_id: (await supabase.auth.getUser()).data.user?.id || '',
-            session_id: sessionId,
-            question_id: currentSession.dbQuestionId,
-            bottle_id: currentSession.dbBottleId || null,
-            response_text: 'audio_accessed',
-          }, { onConflict: 'user_id, session_id, question_id' });
-          
-        if (error) {
-          console.error("Error recording audio interaction:", error);
+        try {
+          const { error } = await supabase
+            .from('user_responses')
+            .upsert({
+              user_id: 'demo-user',
+              session_id: sessionId,
+              question_id: currentSession.dbQuestionId,
+              bottle_id: currentSession.dbBottleId || null,
+              response_text: 'audio_accessed',
+            }, { onConflict: 'user_id, session_id, question_id' });
+              
+          if (error) {
+            console.error("Error recording audio interaction:", error);
+          }
+        } catch (error) {
+          console.error("Error in recordAudioInteraction:", error);
         }
       }
     };

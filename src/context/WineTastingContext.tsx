@@ -2,7 +2,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { UserInfo, WineTastingResponse } from '../types';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface CurrentSessionData {
   dbQuestionId?: number;
@@ -71,22 +71,36 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
 
   const fetchSessions = async () => {
-    const { data, error } = await supabase
-      .from('tasting_sessions')
-      .select('*')
-      .order('created_at', { ascending: false });
-      
-    if (error) {
-      toast({
-        title: "Error loading sessions",
-        description: "Couldn't load tasting sessions.",
-        variant: "destructive"
-      });
-      console.error("Error loading sessions:", error);
-      return [];
+    // Check if Supabase is configured before making the request
+    if (!isSupabaseConfigured()) {
+      console.log("Supabase not configured, returning mock data");
+      return [
+        { id: 1, name: "Demo Wine Tasting", description: "A sample wine tasting experience" },
+        { id: 2, name: "Premium Wines", description: "Experience our premium selection" }
+      ];
     }
     
-    return data || [];
+    try {
+      const { data, error } = await supabase
+        .from('tasting_sessions')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        toast({
+          title: "Error loading sessions",
+          description: "Couldn't load tasting sessions.",
+          variant: "destructive"
+        });
+        console.error("Error loading sessions:", error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error("Error in fetchSessions:", error);
+      return [];
+    }
   };
 
   const submitResponses = async () => {
@@ -102,8 +116,8 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
     try {
       setLoading(true);
       
-      // In a real app with Supabase, the data has already been saved
-      // through individual question responses
+      // In a real app with Supabase, the data would be saved to the database
+      // This is just a fallback when Supabase isn't configured
       console.log('All responses submitted for session:', sessionId);
       
       // Show success toast
@@ -120,6 +134,30 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveResponseToSupabase = async (params: any) => {
+    if (!isSupabaseConfigured() || !sessionId || !currentSession?.dbQuestionId) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('user_responses')
+        .upsert({
+          user_id: 'demo-user', // Fallback user ID
+          session_id: sessionId,
+          question_id: currentSession.dbQuestionId,
+          bottle_id: currentSession.dbBottleId || null,
+          ...params
+        }, { onConflict: 'user_id, session_id, question_id' });
+          
+      if (error) {
+        console.error("Error saving response:", error);
+      }
+    } catch (error) {
+      console.error("Error in saveResponseToSupabase:", error);
     }
   };
 
@@ -141,27 +179,7 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
         }
       }));
       
-      // If connected to Supabase and we have a session ID, store the response
-      if (sessionId && currentSession?.dbQuestionId) {
-        const { error } = await supabase
-          .from('user_responses')
-          .upsert({
-            user_id: (await supabase.auth.getUser()).data.user?.id || '',
-            session_id: sessionId,
-            question_id: currentSession.dbQuestionId,
-            bottle_id: currentSession.dbBottleId || null,
-            response_text: thoughts,
-          }, { onConflict: 'user_id, session_id, question_id' });
-          
-        if (error) {
-          toast({
-            title: "Error saving response",
-            description: "Your thoughts couldn't be saved to the database.",
-            variant: "destructive"
-          });
-          console.error("Error saving response:", error);
-        }
-      }
+      await saveResponseToSupabase({ response_text: thoughts });
     },
     setRating: async (rating: number, bottleNumber = 1) => {
       setWineTastingResponse((prev) => ({
@@ -172,36 +190,19 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
         }
       }));
       
-      // If connected to Supabase and we have a session ID, store the response
-      if (sessionId && currentSession?.dbQuestionId) {
-        const { error } = await supabase
-          .from('user_responses')
-          .upsert({
-            user_id: (await supabase.auth.getUser()).data.user?.id || '',
-            session_id: sessionId,
-            question_id: currentSession.dbQuestionId,
-            bottle_id: currentSession.dbBottleId || null,
-            numeric_rating: rating,
-          }, { onConflict: 'user_id, session_id, question_id' });
-          
-        if (error) {
-          toast({
-            title: "Error saving response",
-            description: "Your rating couldn't be saved to the database.",
-            variant: "destructive"
-          });
-          console.error("Error saving response:", error);
-        }
-      }
+      await saveResponseToSupabase({ numeric_rating: rating });
     },
-    setFruitFlavors: (flavors: string[], bottleNumber = 1) => 
+    setFruitFlavors: async (flavors: string[], bottleNumber = 1) => { 
       setWineTastingResponse((prev) => ({
         ...prev,
         [bottleNumber]: {
           ...prev[bottleNumber],
           fruitFlavors: flavors
         }
-      })),
+      }));
+      
+      await saveResponseToSupabase({ selected_options: flavors });
+    },
     setAcidityRating: async (rating: number, bottleNumber = 1) => {
       setWineTastingResponse((prev) => ({
         ...prev,
@@ -211,27 +212,7 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
         }
       }));
       
-      // If connected to Supabase and we have a session ID, store the response
-      if (sessionId && currentSession?.dbQuestionId) {
-        const { error } = await supabase
-          .from('user_responses')
-          .upsert({
-            user_id: (await supabase.auth.getUser()).data.user?.id || '',
-            session_id: sessionId,
-            question_id: currentSession.dbQuestionId,
-            bottle_id: currentSession.dbBottleId || null,
-            numeric_rating: rating,
-          }, { onConflict: 'user_id, session_id, question_id' });
-          
-        if (error) {
-          toast({
-            title: "Error saving response",
-            description: "Your acidity rating couldn't be saved to the database.",
-            variant: "destructive"
-          });
-          console.error("Error saving response:", error);
-        }
-      }
+      await saveResponseToSupabase({ numeric_rating: rating });
     },
     setAdditionalThoughts: async (thoughts: string, bottleNumber = 1) => {
       setWineTastingResponse((prev) => ({
@@ -242,27 +223,7 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
         }
       }));
       
-      // If connected to Supabase and we have a session ID, store the response
-      if (sessionId && currentSession?.dbQuestionId) {
-        const { error } = await supabase
-          .from('user_responses')
-          .upsert({
-            user_id: (await supabase.auth.getUser()).data.user?.id || '',
-            session_id: sessionId,
-            question_id: currentSession.dbQuestionId,
-            bottle_id: currentSession.dbBottleId || null,
-            response_text: thoughts,
-          }, { onConflict: 'user_id, session_id, question_id' });
-          
-        if (error) {
-          toast({
-            title: "Error saving response",
-            description: "Your additional thoughts couldn't be saved to the database.",
-            variant: "destructive"
-          });
-          console.error("Error saving response:", error);
-        }
-      }
+      await saveResponseToSupabase({ response_text: thoughts });
     },
     nextQuestion,
     previousQuestion,
