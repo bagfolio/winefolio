@@ -33,7 +33,7 @@ const SignInForm = () => {
         setConnectionStatus('Starting to fetch package data from Supabase...');
         
         // Try fetching from the Packages table
-        setConnectionStatus(prev => `${prev}\nAttempting to query the "Packages" table...");
+        setConnectionStatus(prev => `${prev}\nAttempting to query the "Packages" table...`);
         
         const { data, error } = await supabase
           .from('Packages')
@@ -111,7 +111,7 @@ const SignInForm = () => {
     };
     
     fetchPackages();
-  }, [toast, sessionId]);
+  }, [sessionId]);
 
   // When session ID changes, update the selected package
   useEffect(() => {
