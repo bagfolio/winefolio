@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import {
   Select,
   SelectContent,
@@ -12,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PackageInfo } from '../types';
+import { useDataPreload } from '@/hooks/useDataPreload';
 
 const SignInForm = () => {
   const { setUserInfo, nextQuestion, setLoading, setPackageInfo } = useWineTasting();
@@ -22,8 +24,9 @@ const SignInForm = () => {
   const [availablePackages, setAvailablePackages] = useState<PackageInfo[]>([]);
   const [fetchingPackages, setFetchingPackages] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<string>('Initializing...');
-  const { toast } = useToast();
-  
+  const [selectedPackage, setSelectedPackage] = useState<PackageInfo | null>(null);
+  const { preloadData, preloading, preloadError, preloadSuccess } = useDataPreload();
+
   useEffect(() => {
     const fetchPackages = async () => {
       try {
@@ -59,6 +62,7 @@ const SignInForm = () => {
           setAvailablePackages(formattedPackages);
           if (!sessionId && formattedPackages.length > 0) {
             setSessionId(formattedPackages[0].package_id);
+            setSelectedPackage(formattedPackages[0]);
           }
           
           toast({
@@ -66,7 +70,7 @@ const SignInForm = () => {
             description: `Found ${data.length} wine tasting packages.`,
           });
         } else {
-          setConnectionStatus(prev => `${prev}\nNo packages found in database. Database is connected but empty.`);
+          setConnectionStatus(prev => `${prev}\nNo packages found in database or database is empty.`);
           throw new Error('No packages found in database or database is empty');
         }
       } catch (err: any) {
@@ -103,6 +107,7 @@ const SignInForm = () => {
         setAvailablePackages(demoPackages);
         if (!sessionId) {
           setSessionId(demoPackages[0].package_id);
+          setSelectedPackage(demoPackages[0]);
         }
       } finally {
         setFetchingPackages(false);
@@ -111,6 +116,19 @@ const SignInForm = () => {
     
     fetchPackages();
   }, [toast, sessionId]);
+
+  // When session ID changes, update the selected package
+  useEffect(() => {
+    if (sessionId && availablePackages.length > 0) {
+      const pkg = availablePackages.find(p => p.package_id === sessionId) || null;
+      setSelectedPackage(pkg);
+      
+      if (pkg) {
+        console.log(`📦 Selected package: ${pkg.name} (${pkg.package_id})`);
+        console.log(`🍾 Bottles: ${pkg.bottles || 'none'}`);
+      }
+    }
+  }, [sessionId, availablePackages]);
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -143,7 +161,7 @@ const SignInForm = () => {
     
     setErrors(newErrors);
     
-    if (valid) {
+    if (valid && selectedPackage) {
       // Set loading to true before validating session ID
       setLoading(true);
       
@@ -155,11 +173,7 @@ const SignInForm = () => {
         const selectedPackage = availablePackages.find(pkg => pkg.package_id === trimmedSessionId);
         
         if (!selectedPackage) {
-          toast({
-            title: 'Invalid Session Code',
-            description: 'The session code you entered could not be found.',
-            variant: 'destructive',
-          });
+          toast.error('The session code you entered could not be found.');
           setLoading(false);
           return;
         }
@@ -178,19 +192,32 @@ const SignInForm = () => {
         console.log('Moving to next question');
         nextQuestion();
         
-        toast({
-          title: 'Success',
-          description: 'Session code validated successfully!',
-        });
+        toast.success('Session code validated successfully!');
       } catch (error) {
         console.error('Error in session validation:', error);
-        toast({
-          title: 'Error',
-          description: 'An unexpected error occurred. Please try again.',
-          variant: 'destructive',
-        });
+        toast.error('An unexpected error occurred. Please try again.');
         setLoading(false);
       }
+    }
+  };
+
+  const handlePreloadData = async () => {
+    if (!selectedPackage) {
+      toast.error('Please select a package first');
+      return;
+    }
+
+    try {
+      const result = await preloadData(selectedPackage);
+      if (result.success) {
+        setConnectionStatus(prev => `${prev}\n✅ Data preloaded successfully: ${result.message}`);
+      } else {
+        setConnectionStatus(prev => `${prev}\n❌ Data preload failed: ${result.message}`);
+      }
+    } catch (error: any) {
+      console.error('Error in preloading data:', error);
+      setConnectionStatus(prev => `${prev}\n❌ Error preloading data: ${error.message}`);
+      toast.error('Failed to preload data');
     }
   };
 
@@ -242,6 +269,26 @@ const SignInForm = () => {
               </SelectContent>
             </Select>
             {errors.sessionId && <p className="text-red-300 text-sm mt-1">{errors.sessionId}</p>}
+
+            {/* Preload data button */}
+            <div className="mt-2">
+              <Button 
+                type="button" 
+                onClick={handlePreloadData}
+                disabled={!selectedPackage || preloading}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white transition duration-300 text-sm"
+              >
+                {preloading ? 'Loading Data...' : 'Test Data Preload'}
+              </Button>
+              
+              {preloadSuccess && (
+                <p className="text-green-300 text-xs mt-1">✅ Data preload successful. Ready to proceed.</p>
+              )}
+              
+              {preloadError && (
+                <p className="text-red-300 text-xs mt-1">❌ {preloadError}</p>
+              )}
+            </div>
           </div>
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-white mb-1">

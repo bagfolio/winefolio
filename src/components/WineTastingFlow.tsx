@@ -27,23 +27,13 @@ const WineTastingFlow = () => {
     console.log('📦 Package info:', packageInfo ? JSON.stringify(packageInfo, null, 2) : 'None');
     console.log('👤 User info:', userInfo ? JSON.stringify(userInfo, null, 2) : 'None');
     console.log('🔢 Current question index:', currentQuestionIndex);
-    
-    // Add a debugging interval
-    const debugInterval = setInterval(() => {
-      console.log('⏱️ Loading status check:');
-      console.log(`  - Context loading: ${contextLoading ? 'YES' : 'NO'}`);
-      console.log(`  - Initial load attempted: ${initialLoadAttempted ? 'YES' : 'NO'}`);
-      console.log(`  - Current question index: ${currentQuestionIndex}`);
-      console.log(`  - User info exists: ${userInfo ? 'YES' : 'NO'}`);
-    }, 5000);
-    
-    return () => clearInterval(debugInterval);
-  }, [packageInfo, contextLoading, initialLoadAttempted, currentQuestionIndex, userInfo]);
+  }, [packageInfo, userInfo, currentQuestionIndex]);
   
   // Only fetch bottles if we already have package info (user is logged in)
   const { 
     bottlesData, 
-    loading: bottlesLoading 
+    loading: bottlesLoading, 
+    error: bottlesError
   } = usePackageBottles(userInfo && packageInfo ? packageInfo : null);
   
   const { 
@@ -119,6 +109,13 @@ const WineTastingFlow = () => {
                              !isLoading && 
                              currentQuestionIndex > 0 && 
                              packageInfo;
+
+  // Display any errors encountered during bottle loading
+  useEffect(() => {
+    if (bottlesError && currentQuestionIndex > 0) {
+      toast.error(`Error loading wine data: ${bottlesError}`);
+    }
+  }, [bottlesError, currentQuestionIndex]);
   
   // Log the current application state
   useEffect(() => {
