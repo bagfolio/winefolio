@@ -1,1 +1,11 @@
+
 project_id = "mpvgvqrfutmbbaigvgyy"
+
+# Adding a database function to help with debugging
+[functions.get_all_tables]
+schema = "public"
+language = "sql"
+body = """
+SELECT * FROM information_schema.tables WHERE table_schema = 'public';
+"""
+returns = "table(table_catalog text, table_schema text, table_name text, table_type text, self_referencing_column_name text, reference_generation text, user_defined_type_catalog text, user_defined_type_schema text, user_defined_type_name text, is_insertable_into text, is_typed text, commit_action text)"

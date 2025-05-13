@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,8 +29,17 @@ const SignInForm = () => {
       try {
         setFetchingPackages(true);
         console.log('Fetching package data from Supabase...');
+        console.log('Supabase URL:', supabase.supabaseUrl);
         
-        // Test with direct query to debug
+        // Print the table schema to debug
+        const { data: tableData, error: tableError } = await supabase
+          .from('information_schema.tables')
+          .select('*')
+          .eq('table_schema', 'public');
+          
+        console.log('Available tables in public schema:', tableData?.map(t => t.table_name), tableError);
+        
+        // Test with direct query to debug - use single quotes around table names to be safe
         const { data, error } = await supabase
           .from('Packages')
           .select('*');
@@ -38,11 +48,28 @@ const SignInForm = () => {
         
         if (error) {
           console.error('Error fetching packages:', error);
-          toast({
-            title: 'Error',
-            description: 'Could not load available packages. Please try again later.',
-            variant: 'destructive',
-          });
+          
+          // Try another query with lowercase table name
+          console.log('Trying with lowercase table name "packages"...');
+          const { data: altData, error: altError } = await supabase
+            .from('packages')
+            .select('*');
+            
+          console.log('Results with lowercase table name:', altData, altError);
+          
+          if (!altError && altData && altData.length > 0) {
+            console.log('Successfully fetched packages with lowercase name:', altData);
+            setAvailablePackages(altData);
+            if (altData[0]?.package_id) {
+              setSessionId(altData[0].package_id);
+            }
+          } else {
+            toast({
+              title: 'Error',
+              description: 'Could not load available packages. Please try again later.',
+              variant: 'destructive',
+            });
+          }
         } else if (data && data.length > 0) {
           console.log('Successfully fetched packages:', data);
           setAvailablePackages(data);
@@ -53,7 +80,14 @@ const SignInForm = () => {
           }
         } else {
           console.log('No packages found in database');
-          // Keep availablePackages as empty array
+          // If no packages found through direct query, try listing all tables to debug
+          try {
+            const { data: allTables } = await supabase
+              .rpc('get_all_tables');
+            console.log('All tables in database:', allTables);
+          } catch (err) {
+            console.error('Error listing tables:', err);
+          }
         }
       } catch (err) {
         console.error('Unexpected error in fetchAllPackageIds:', err);
@@ -105,6 +139,9 @@ const SignInForm = () => {
         console.log('Validating session ID:', sessionId);
         const trimmedSessionId = sessionId.trim();
         
+        // Try to look for the package in the database, with extra logging
+        console.log('Looking for package with ID:', trimmedSessionId);
+        
         // Simple direct query - just check if the package_id exists
         const { data: packageData, error: packageError } = await supabase
           .from('Packages')
@@ -115,6 +152,24 @@ const SignInForm = () => {
         console.log('Package query result:', packageData, packageError);
         
         if (packageError) {
+          // Try lowercase table name as fallback
+          console.log('Trying lowercase table name as fallback...');
+          const { data: altPackageData, error: altPackageError } = await supabase
+            .from('packages')
+            .select('*')
+            .eq('package_id', trimmedSessionId)
+            .maybeSingle();
+            
+          console.log('Alternative query result:', altPackageData, altPackageError);
+          
+          if (!altPackageError && altPackageData) {
+            console.log('Found package with lowercase table name:', altPackageData);
+            setPackageInfo(altPackageData);
+            setUserInfo({ name, email, sessionId: trimmedSessionId });
+            nextQuestion();
+            return;
+          }
+          
           console.error('Error fetching package:', packageError);
           toast({
             title: 'Error',
