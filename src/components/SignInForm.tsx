@@ -35,9 +35,20 @@ const SignInForm = () => {
         // Log Supabase client details (without exposing sensitive information)
         console.log('Supabase client initialized:', !!supabase);
         
-        // Use the exact capitalization from the database schema
-        setDebugInfo(prev => prev + '\nAttempting to fetch from "Packages" table with correct capitalization...');
+        // Try using a raw query approach to debug the issue
+        setDebugInfo(prev => prev + '\nAttempting direct query on "Packages" table...');
         
+        // First, let's try to get table names to confirm what's available
+        const { data: tableInfo, error: tableError } = await supabase
+          .rpc('get_all_tables');
+          
+        if (tableError) {
+          setDebugInfo(prev => prev + `\nError fetching tables: ${tableError.message}`);
+        } else {
+          setDebugInfo(prev => prev + `\nFound tables: ${JSON.stringify(tableInfo)}`);
+        }
+        
+        // Now try the Packages query with proper capitalization
         const { data: packagesData, error: packagesError } = await supabase
           .from('Packages')
           .select('*');
@@ -48,13 +59,12 @@ const SignInForm = () => {
         }
         
         setDebugInfo(prev => prev + `\nSuccessfully fetched ${packagesData?.length || 0} packages from 'Packages'`);
+        console.log('Raw packages response:', packagesData);
         
         if (packagesData && packagesData.length > 0) {
-          console.log('Raw packages data:', JSON.stringify(packagesData));
           setDebugInfo(prev => prev + `\nRaw data: ${JSON.stringify(packagesData)}`);
           
           // Transform the data to match PackageInfo type
-          // Making sure we use the correct property names from the database
           const formattedPackages: PackageInfo[] = packagesData.map(pkg => ({
             name: pkg.name || 'Unnamed Package',
             package_id: pkg.package_id || 'NO_ID',
@@ -67,7 +77,32 @@ const SignInForm = () => {
           setAvailablePackages(formattedPackages);
           setSessionId(formattedPackages[0]?.package_id || '');
         } else {
-          throw new Error('No packages found in database');
+          // Try an alternative query approach
+          setDebugInfo(prev => prev + '\nTrying an alternative approach with lower case table name...');
+          
+          const { data: alternativeData, error: alternativeError } = await supabase
+            .from('packages')
+            .select('*');
+            
+          if (alternativeError) {
+            setDebugInfo(prev => prev + `\nLower case query error: ${alternativeError.message}`);
+          } else if (alternativeData && alternativeData.length > 0) {
+            setDebugInfo(prev => prev + `\nFound ${alternativeData.length} packages with lower case query!`);
+            
+            const formattedPackages: PackageInfo[] = alternativeData.map(pkg => ({
+              name: pkg.name || 'Unnamed Package',
+              package_id: pkg.package_id || 'NO_ID',
+              bottles: pkg.bottles || '',
+              sommeliers: pkg.sommeliers || '',
+              tastings: pkg.tastings || '',
+              hosts: pkg.hosts || ''
+            }));
+            
+            setAvailablePackages(formattedPackages);
+            setSessionId(formattedPackages[0]?.package_id || '');
+          } else {
+            throw new Error('No packages found in database');
+          }
         }
       } catch (err: any) {
         console.error('Error in fetchAllPackageIds:', err);
@@ -195,7 +230,7 @@ const SignInForm = () => {
         </h2>
         
         {/* Debug info section */}
-        <div className="mb-4 p-2 bg-purple-800/40 rounded text-xs text-white overflow-auto max-h-32">
+        <div className="mb-4 p-2 bg-purple-800/40 rounded text-xs text-white overflow-auto max-h-60">
           <p className="font-semibold mb-1">Database Connection Status:</p>
           <pre className="whitespace-pre-wrap">{debugInfo || 'No debug info available yet'}</pre>
         </div>
