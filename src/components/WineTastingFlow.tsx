@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
@@ -13,6 +14,7 @@ import ProgressIndicator from './ProgressIndicator';
 import LoadingScreen from './LoadingScreen';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { BottleData } from '@/context/types';
 
 const WineTastingFlow = () => {
   const { 
@@ -100,7 +102,8 @@ const WineTastingFlow = () => {
           return aIndex - bIndex;
         });
         
-        setBottlesData(sortedBottles);
+        // Cast the sorted bottles to BottleData type
+        setBottlesData(sortedBottles as unknown as BottleData[]);
         console.log('Sorted bottles:', sortedBottles);
         
       } catch (err) {
