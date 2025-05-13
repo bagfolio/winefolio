@@ -6,4 +6,35 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://mpvgvqrfutmbbaigvgyy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wdmd2cXJmdXRtYmJhaWd2Z3l5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNDQ1NzIsImV4cCI6MjA2MjcyMDU3Mn0._AIsIQX4jn5mER0lpNdG3aC92KfH7g1j-vPHF0gc1xI";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Create the Supabase client
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true
+  },
+  global: {
+    // Enable more detailed error messages during development
+    fetch: (...args) => fetch(...args)
+  }
+});
+
+// Export a debug function to check connection
+export const checkSupabaseConnection = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('Packages')
+      .select('package_id, name')
+      .limit(1);
+    
+    if (error) {
+      console.error('Supabase connection error:', error);
+      return { success: false, error };
+    }
+    
+    console.log('Supabase connection successful:', data);
+    return { success: true, data };
+  } catch (err) {
+    console.error('Failed to connect to Supabase:', err);
+    return { success: false, error: err };
+  }
+};

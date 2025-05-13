@@ -58,7 +58,7 @@ const WineTastingFlow = () => {
 
       try {
         setLoading(true);
-        console.log('Fetching bottles for package:', packageInfo.package_id);
+        console.log('Fetching bottles for package:', packageInfo.package_id, packageInfo);
         
         // Parse bottle names from package
         const bottleNames = packageInfo.bottles?.split(',').map(b => b.trim()) || [];
@@ -71,11 +71,21 @@ const WineTastingFlow = () => {
         
         console.log('Looking for these bottles:', bottleNames);
 
-        // Fetch bottles from Supabase
+        // Fetch all bottles first to debug
+        const { data: allBottles, error: allBottlesError } = await supabase
+          .from('Bottles')
+          .select('*');
+          
+        if (allBottlesError) {
+          console.error('Error fetching all bottles:', allBottlesError);
+        } else {
+          console.log('All available bottles in database:', allBottles);
+        }
+
+        // Now fetch the specific bottles we need
         const { data: bottlesData, error } = await supabase
           .from('Bottles')
-          .select('*')
-          .in('Name', bottleNames);
+          .select('*');
           
         if (error) {
           console.error('Error fetching bottles:', error);
@@ -84,17 +94,24 @@ const WineTastingFlow = () => {
           return;
         }
         
-        if (!bottlesData || bottlesData.length === 0) {
-          console.warn('No matching bottles found in database');
+        // Filter bottles by name manually since the 'in' operator might not be working as expected
+        const matchedBottles = bottlesData?.filter(bottle => 
+          bottleNames.some(name => bottle.Name?.toLowerCase() === name.toLowerCase())
+        );
+        
+        if (!matchedBottles || matchedBottles.length === 0) {
+          console.warn('No matching bottles found in database after filtering');
+          console.log('Available bottles:', bottlesData?.map(b => b.Name));
+          console.log('Looking for:', bottleNames);
           toast.warning('No matching bottles found for this tasting');
           setLoading(false);
           return;
         }
         
-        console.log('Fetched bottles data:', bottlesData);
+        console.log('Matched bottles data:', matchedBottles);
         
         // Sort bottles according to the sequence field or original package order
-        const sortedBottles = bottlesData.sort((a, b) => {
+        const sortedBottles = matchedBottles.sort((a, b) => {
           // If sequence is available, use it
           if (a.sequence !== null && b.sequence !== null) {
             return (a.sequence || 0) - (b.sequence || 0);
@@ -106,12 +123,25 @@ const WineTastingFlow = () => {
           return aIndex - bIndex;
         });
         
-        // Cast the sorted bottles to BottleData type
-        setBottlesData(sortedBottles as unknown as BottleData[]);
-        console.log('Sorted bottles:', sortedBottles);
+        // Cast the sorted bottles to BottleData type and map fields properly
+        const mappedBottles = sortedBottles.map(bottle => {
+          // Handle the field mapping - some bottles might have different field structures
+          return {
+            ...bottle,
+            // Map the intro questions field from either format
+            introQuestions: bottle.introQuestions || bottle["Intro Questions"],
+            // Map the deep questions field from either format
+            deepQuestions: bottle.deepQuestions || bottle["Deep Question"],
+            // Map the final questions field from either format
+            finalQuestions: bottle.finalQuestions || bottle["Final Questions"],
+          };
+        }) as unknown as BottleData[];
+        
+        console.log('Processed bottles with mapped fields:', mappedBottles);
+        setBottlesData(mappedBottles);
         
         // Now fetch questions for these bottles
-        await fetchQuestionsForBottles(sortedBottles as unknown as BottleData[]);
+        await fetchQuestionsForBottles(mappedBottles);
         
       } catch (err) {
         console.error('Failed to fetch bottles:', err);
@@ -141,11 +171,21 @@ const WineTastingFlow = () => {
       
       console.log('Fetching questions for bottles:', bottleNames);
       
-      // Fetch questions related to these bottles
+      // Fetch all questions first to debug
+      const { data: allQuestions, error: allQuestionsError } = await supabase
+        .from('Questions')
+        .select('*');
+        
+      if (allQuestionsError) {
+        console.error('Error fetching all questions:', allQuestionsError);
+      } else {
+        console.log('All available questions in database:', allQuestions);
+      }
+      
+      // Fetch questions related to these bottles - try without the 'in' operator
       const { data: questionData, error } = await supabase
         .from('Questions')
-        .select('*')
-        .in('Bottles', bottleNames);
+        .select('*');
         
       if (error) {
         console.error('Error fetching questions:', error);
@@ -153,21 +193,38 @@ const WineTastingFlow = () => {
         return;
       }
       
-      if (!questionData || questionData.length === 0) {
-        console.warn('No questions found for the selected bottles');
+      // Manually filter questions by bottle name
+      const relevantQuestions = questionData?.filter(q => {
+        if (!q.Bottles) return false;
+        // Check if any of our bottle names are mentioned in the question's Bottles field
+        return bottleNames.some(name => 
+          q.Bottles?.includes(name)
+        );
+      });
+      
+      if (!relevantQuestions || relevantQuestions.length === 0) {
+        console.warn('No questions found for the selected bottles after filtering');
+        console.log('Looking for questions for bottles:', bottleNames);
+        console.log('Available questions:', questionData?.map(q => ({bottle: q.Bottles, text: q["Question Text"]})));
         // Continue with default questions
+        const defaultQuestions = generateDynamicQuestionsFromData(bottles, []);
+        setDynamicQuestions(defaultQuestions);
         return;
       }
       
-      console.log('Fetched questions data:', questionData);
+      console.log('Fetched relevant questions data:', relevantQuestions);
       
       // Map the questions to the bottles and generate dynamic questions
-      const mappedQuestions = generateDynamicQuestionsFromData(bottles, questionData);
+      const mappedQuestions = generateDynamicQuestionsFromData(bottles, relevantQuestions);
       setDynamicQuestions(mappedQuestions);
       
     } catch (err) {
       console.error('Failed to fetch questions:', err);
       toast.error('An error occurred while loading questions');
+      
+      // Fall back to default questions
+      const defaultQuestions = generateDynamicQuestionsFromData(bottles, []);
+      setDynamicQuestions(defaultQuestions);
     }
   };
   
@@ -318,9 +375,16 @@ const WineTastingFlow = () => {
       return typeof value === 'string' ? value : defaultValue;
     }
     
-    // If json is a string, return it as is
+    // If json is a string, try to parse it
     if (typeof json === 'string') {
-      return json;
+      try {
+        const parsed = JSON.parse(json);
+        const value = parsed[property];
+        return typeof value === 'string' ? value : defaultValue;
+      } catch {
+        // If parsing fails, just return the raw string
+        return json;
+      }
     }
     
     return defaultValue;
