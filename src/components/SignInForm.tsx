@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useWineTasting } from '@/context/WineTastingContext';
@@ -13,6 +12,29 @@ const SignInForm = () => {
   const [sessionId, setSessionId] = useState('');
   const [errors, setErrors] = useState({ name: '', email: '', sessionId: '' });
   const { toast } = useToast();
+  
+  // Debug function to fetch and log all package IDs on component mount
+  useEffect(() => {
+    const fetchAllPackageIds = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('Packages')
+          .select('package_id, name')
+          .order('name');
+          
+        if (error) {
+          console.error('Error fetching package IDs:', error);
+        } else if (data) {
+          console.log('Available package IDs in database:', data);
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching package IDs:', err);
+      }
+    };
+    
+    // Immediately call the function
+    fetchAllPackageIds();
+  }, []);
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -53,53 +75,14 @@ const SignInForm = () => {
         console.log('Validating session ID:', sessionId);
         const trimmedSessionId = sessionId.trim();
         
-        // Try direct query first
-        let { data: packageData, error: packageError } = await supabase
+        // Simple direct query - just check if the package_id exists
+        const { data: packageData, error: packageError } = await supabase
           .from('Packages')
           .select('*')
-          .eq('package_id', trimmedSessionId);
+          .eq('package_id', trimmedSessionId)
+          .maybeSingle();
         
         console.log('Package query result:', packageData, packageError);
-        
-        // If no results, try with ilike for case-insensitive comparison
-        if ((!packageData || packageData.length === 0) && !packageError) {
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('Packages')
-            .select('*')
-            .ilike('package_id', `%${trimmedSessionId}%`);
-            
-          console.log('Fallback package query result:', fallbackData, fallbackError);
-          packageData = fallbackData;
-          packageError = fallbackError;
-        }
-        
-        // As another fallback, try the session ID as-is without trimming
-        if ((!packageData || packageData.length === 0) && !packageError) {
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('Packages')
-            .select('*')
-            .eq('package_id', sessionId);  // Use the raw sessionId
-            
-          console.log('Raw session ID package query result:', fallbackData, fallbackError);
-          packageData = fallbackData;
-          packageError = fallbackError;
-        }
-
-        // Try a hardcoded value as a test
-        if ((!packageData || packageData.length === 0) && !packageError) {
-          if (trimmedSessionId === "recVAjMJjro9hM96e") {
-            // Create a mock package object for testing
-            packageData = [{
-              package_id: "recVAjMJjro9hM96e",
-              name: "Test Wine Package",
-              bottles: "Red Wine,White Wine",  // Sample bottle names
-              sommeliers: "Test Sommelier",
-              hosts: "Test Host",
-              tastings: "Test Tasting"
-            }];
-            console.log('Using hardcoded test package:', packageData);
-          }
-        }
         
         if (packageError) {
           console.error('Error fetching package:', packageError);
@@ -112,8 +95,8 @@ const SignInForm = () => {
           return;
         }
         
-        if (!packageData || packageData.length === 0) {
-          console.error('No package found with ID:', trimmedSessionId);
+        if (!packageData) {
+          console.log('No package found with ID:', trimmedSessionId);
           toast({
             title: 'Invalid Session Code',
             description: 'The session code you entered could not be found.',
@@ -123,10 +106,9 @@ const SignInForm = () => {
           return;
         }
         
-        // Store package info in context
-        const foundPackage = packageData[0];
-        console.log('Found package:', foundPackage);
-        setPackageInfo(foundPackage);
+        // We found a package, store it in context
+        console.log('Found package:', packageData);
+        setPackageInfo(packageData);
         
         // Store user info
         setUserInfo({ name, email, sessionId: trimmedSessionId });
