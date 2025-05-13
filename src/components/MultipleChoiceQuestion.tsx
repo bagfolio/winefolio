@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
 import { ArrowLeft, ArrowRight, Wine } from 'lucide-react';
 import WineFaq from './WineFaq';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/ui/use-toast';
 
 interface MultipleChoiceQuestionProps {
   questionId: number;
@@ -15,9 +17,12 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({ questio
     wineTastingResponse, 
     setFruitFlavors, 
     nextQuestion, 
-    previousQuestion 
+    previousQuestion,
+    sessionId,
+    currentSession
   } = useWineTasting();
   
+  const { toast } = useToast();
   const question = questions.find(q => q.id === questionId);
   const bottleNumber = question?.bottleNumber || 1;
   const options = question?.options || [];
@@ -26,12 +31,39 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({ questio
     return wineTastingResponse[bottleNumber]?.fruitFlavors?.includes(option) || false;
   };
   
-  const toggleOption = (option: string) => {
+  const toggleOption = async (option: string) => {
     const currentFlavors = wineTastingResponse[bottleNumber]?.fruitFlavors || [];
+    let newFlavors;
+    
     if (isSelected(option)) {
-      setFruitFlavors(currentFlavors.filter(item => item !== option), bottleNumber);
+      newFlavors = currentFlavors.filter(item => item !== option);
     } else {
-      setFruitFlavors([...currentFlavors, option], bottleNumber);
+      newFlavors = [...currentFlavors, option];
+    }
+    
+    // Update local state
+    setFruitFlavors(newFlavors, bottleNumber);
+    
+    // If connected to Supabase and we have a session ID, store the response
+    if (sessionId && currentSession?.dbQuestionId) {
+      const { error } = await supabase
+        .from('user_responses')
+        .upsert({
+          user_id: (await supabase.auth.getUser()).data.user?.id || '',
+          session_id: sessionId,
+          question_id: currentSession.dbQuestionId,
+          bottle_id: currentSession.dbBottleId || null,
+          selected_options: newFlavors,
+        }, { onConflict: 'user_id, session_id, question_id' });
+        
+      if (error) {
+        toast({
+          title: "Error saving response",
+          description: "Your selection couldn't be saved to the database.",
+          variant: "destructive"
+        });
+        console.error("Error saving response:", error);
+      }
     }
   };
 
