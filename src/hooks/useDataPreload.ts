@@ -68,15 +68,23 @@ export const useDataPreload = () => {
       console.log(`📊 Found ${relevantQuestions?.length || 0} relevant questions for these bottles`);
       
       // Count questions per bottle
+      const bottleQuestionCounts: Record<string, { total: number, intro: number, deep: number, final: number }> = {};
       bottleNames.forEach(name => {
         const questionsForBottle = relevantQuestions?.filter(q => q.Bottles?.includes(name)) || [];
-        console.log(`🍷 Bottle "${name}": ${questionsForBottle.length} questions`);
         
-        // Group by question type
+        // Count questions by type
         const introQuestions = questionsForBottle.filter(q => q["Question Set Type"] === "Intro").length;
         const deepQuestions = questionsForBottle.filter(q => q["Question Set Type"] === "Deep Dive").length;
         const finalQuestions = questionsForBottle.filter(q => q["Question Set Type"] === "Final").length;
         
+        bottleQuestionCounts[name] = {
+          total: questionsForBottle.length,
+          intro: introQuestions,
+          deep: deepQuestions,
+          final: finalQuestions
+        };
+        
+        console.log(`🍷 Bottle "${name}": ${questionsForBottle.length} questions`);
         console.log(`  - Intro questions: ${introQuestions}`);
         console.log(`  - Deep dive questions: ${deepQuestions}`);
         console.log(`  - Final questions: ${finalQuestions}`);
@@ -90,7 +98,9 @@ export const useDataPreload = () => {
           questions: [], 
           message: 'No specific questions found for these bottles, will use default questions',
           totalQuestions: 0,
-          bottlesCount: bottles.length
+          bottlesCount: bottles.length,
+          bottleNames,
+          bottleQuestionCounts: {}
         };
       }
       
@@ -101,7 +111,9 @@ export const useDataPreload = () => {
         success: true, 
         questions: dynamicQuestions,
         totalQuestions: relevantQuestions.length,
-        bottlesCount: bottles.length
+        bottlesCount: bottles.length,
+        bottleNames,
+        bottleQuestionCounts
       };
     } catch (err: any) {
       console.error('❌ Failed to fetch questions:', err);
@@ -245,6 +257,10 @@ export const useDataPreload = () => {
       const bottles = bottlesResult.bottles;
       console.log(`✅ Successfully fetched ${bottles.length} bottles`);
       
+      // List bottles found by name
+      const bottleNames = bottles.map(b => b.Name).filter(Boolean);
+      const bottleNamesStr = bottleNames.join(', ');
+      
       // Step 2: Fetch questions
       console.log('📝 Step 2: Fetching questions for bottles...');
       const questionsResult = await fetchQuestionsForBottles(bottles);
@@ -258,12 +274,29 @@ export const useDataPreload = () => {
         setPreloading(false);
         return { 
           success: true, 
-          message: `Data preloaded with default questions for ${bottles.length} bottles. Ready to start tasting.`
+          message: `Data preloaded with default questions for ${bottles.length} bottles (${bottleNamesStr}). Ready to start tasting.`
         };
       }
       
       const bottlesCount = questionsResult.bottlesCount || bottles.length;
       const questionsCount = questionsResult.totalQuestions || 0;
+      
+      // Generate detailed stats for the success message
+      let detailedMessage = `Data preloaded successfully: ${bottlesCount} bottles and ${questionsCount} questions loaded.`;
+      
+      // Add bottle names
+      detailedMessage += `\n\nBottles found: ${bottleNamesStr}`;
+      
+      // Add question details per bottle if available
+      if (questionsResult.bottleQuestionCounts) {
+        detailedMessage += "\n\nQuestions per bottle:";
+        
+        Object.entries(questionsResult.bottleQuestionCounts).forEach(([bottleName, counts]) => {
+          detailedMessage += `\n- ${bottleName}: ${counts.total} total (${counts.intro} intro, ${counts.deep} deep, ${counts.final} final)`;
+        });
+      }
+      
+      detailedMessage += "\n\nReady to start tasting.";
       
       console.log(`✅ Successfully preloaded ${questionsResult.questions.length} questions for ${bottlesCount} bottles`);
       
@@ -273,7 +306,7 @@ export const useDataPreload = () => {
       toast.success('Data preloaded successfully. Ready to start tasting.');
       return { 
         success: true, 
-        message: `Data preloaded successfully: ${bottlesCount} bottles and ${questionsCount} questions loaded. Ready to start tasting.` 
+        message: detailedMessage
       };
       
     } catch (error: any) {

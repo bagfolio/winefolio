@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -225,7 +224,7 @@ const SignInForm = () => {
           Join Wine Tasting Session
         </h2>
         
-        {/* Connection status section */}
+        {/* Connection status section - make it scrollable and better formatted */}
         <div className="mb-4 p-2 bg-purple-800/40 rounded text-xs text-white overflow-auto max-h-60">
           <p className="font-semibold mb-1">Database Connection Status:</p>
           <pre className="whitespace-pre-wrap">{connectionStatus}</pre>
