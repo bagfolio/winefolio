@@ -13,33 +13,24 @@ export type Database = {
         Row: {
           bottle_image_url: string | null
           "Deep Question": string | null
-          deepQuestions: Json | null
           "Final Questions": Json | null
-          finalQuestions: Json | null
           "Intro Questions": string | null
-          introQuestions: Json | null
           Name: string | null
           sequence: number | null
         }
         Insert: {
           bottle_image_url?: string | null
           "Deep Question"?: string | null
-          deepQuestions?: Json | null
           "Final Questions"?: Json | null
-          finalQuestions?: Json | null
           "Intro Questions"?: string | null
-          introQuestions?: Json | null
           Name?: string | null
           sequence?: number | null
         }
         Update: {
           bottle_image_url?: string | null
           "Deep Question"?: string | null
-          deepQuestions?: Json | null
           "Final Questions"?: Json | null
-          finalQuestions?: Json | null
           "Intro Questions"?: string | null
-          introQuestions?: Json | null
           Name?: string | null
           sequence?: number | null
         }

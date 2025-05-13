@@ -1,6 +1,27 @@
 
 import { BottleData } from "@/context/types";
 import { Question } from "@/types";
+import { Json } from "@/integrations/supabase/types";
+
+/**
+ * Helper function to safely extract a string property from a Json object
+ */
+const getJsonProperty = (json: Json | null, property: string, defaultValue: string): string => {
+  if (!json) return defaultValue;
+  
+  // If json is an object, try to get the property
+  if (typeof json === 'object' && json !== null) {
+    const value = (json as Record<string, any>)[property];
+    return typeof value === 'string' ? value : defaultValue;
+  }
+  
+  // If json is a string, return it as is
+  if (typeof json === 'string') {
+    return json;
+  }
+  
+  return defaultValue;
+};
 
 /**
  * Dynamically generates questions based on available bottles data
@@ -33,8 +54,8 @@ export const generateBottleQuestions = (bottlesData: BottleData[]): Question[] =
     dynamicQuestions.push({
       id: 100 + (bottleNumber * 10) + 1,
       type: 'text',
-      question: bottle.introQuestions?.question || 'What are your initial thoughts about this wine?',
-      description: bottle.introQuestions?.description || 'Share your first impressions',
+      question: getJsonProperty(bottle.introQuestions, 'question', 'What are your initial thoughts about this wine?'),
+      description: getJsonProperty(bottle.introQuestions, 'description', 'Share your first impressions'),
       bottleNumber
     });
     
@@ -64,8 +85,8 @@ export const generateBottleQuestions = (bottlesData: BottleData[]): Question[] =
     dynamicQuestions.push({
       id: 100 + (bottleNumber * 10) + 4,
       type: 'text',
-      question: bottle.finalQuestions?.question || 'Any additional thoughts about this wine?',
-      description: bottle.finalQuestions?.description || 'Share your final impressions',
+      question: getJsonProperty(bottle.finalQuestions, 'question', 'Any additional thoughts about this wine?'),
+      description: getJsonProperty(bottle.finalQuestions, 'description', 'Share your final impressions'),
       bottleNumber
     });
   });
@@ -106,3 +127,4 @@ export const getAvailableQuestions = (bottlesData: BottleData[]): Question[] => 
   
   return generateBottleQuestions(bottlesData);
 };
+
