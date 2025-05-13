@@ -21,7 +21,7 @@ export const usePackageBottles = (packageInfo: PackageInfo | null) => {
         console.log('📦 Package details:', JSON.stringify(packageInfo, null, 2));
         
         // Parse bottle names from package
-        const bottleNames = packageInfo.bottles?.split(',').map(b => b.trim()) || [];
+        const bottleNames = packageInfo.bottles?.split(',').map(b => b.trim()).filter(Boolean) || [];
         if (bottleNames.length === 0) {
           console.warn('⚠️ No bottles found in package info');
           toast.warning('No bottles found for this tasting session');
@@ -44,14 +44,18 @@ export const usePackageBottles = (packageInfo: PackageInfo | null) => {
           return;
         } else {
           console.log(`✅ Successfully fetched ${allBottles?.length || 0} bottles from database`);
-          console.log('🍾 Available bottles:', allBottles?.map(b => b.Name).join(', '));
+          console.log('🍾 Available bottles:', allBottles?.map(b => b.Name));
         }
 
-        // Filter bottles by name manually since the 'in' operator might not be working as expected
-        console.log('🔍 Filtering bottles by name...');
+        // Case insensitive matching for bottles
+        console.log('🔍 Filtering bottles by name (case-insensitive)...');
         const matchedBottles = allBottles?.filter(bottle => 
           bottleNames.some(name => {
-            const match = bottle.Name?.toLowerCase() === name.toLowerCase();
+            // Convert both to lowercase for case-insensitive matching
+            const bottleName = (bottle.Name || '').toLowerCase();
+            const searchName = name.toLowerCase();
+            const match = bottleName === searchName || bottleName.includes(searchName);
+            
             if (match) {
               console.log(`✅ Found match for "${name}": ${bottle.Name}`);
             }
@@ -63,14 +67,14 @@ export const usePackageBottles = (packageInfo: PackageInfo | null) => {
         
         if (!matchedBottles || matchedBottles.length === 0) {
           console.warn('⚠️ No matching bottles found in database after filtering');
-          console.log('🍾 Available bottles:', allBottles?.map(b => b.Name));
-          console.log('🔍 Looking for:', bottleNames);
+          console.log('🍾 Available bottles in DB:', allBottles?.map(b => b.Name));
+          console.log('🔍 Looking for these bottle names:', bottleNames);
           toast.warning('No matching bottles found for this tasting');
           
           // For development/demo purposes, use any available bottles if no matches found
           if (allBottles && allBottles.length > 0) {
             console.log('⚠️ Using fallback bottles for development');
-            const fallbackBottles = allBottles.slice(0, Math.min(2, allBottles.length)); // Use first 2 bottles as fallback
+            const fallbackBottles = allBottles.slice(0, Math.min(3, allBottles.length)); 
             console.log('🍷 Fallback bottles:', fallbackBottles.map(b => b.Name));
             processFinalBottles(fallbackBottles, bottleNames);
           } else {
@@ -107,8 +111,12 @@ export const usePackageBottles = (packageInfo: PackageInfo | null) => {
         }
         
         // Otherwise sort by the order they appear in the package bottles string
-        const aIndex = bottleNames.indexOf(a.Name || '');
-        const bIndex = bottleNames.indexOf(b.Name || '');
+        const aIndex = bottleNames.findIndex(name => 
+          (a.Name || '').toLowerCase().includes(name.toLowerCase())
+        );
+        const bIndex = bottleNames.findIndex(name => 
+          (b.Name || '').toLowerCase().includes(name.toLowerCase())
+        );
         return aIndex - bIndex;
       });
       
@@ -124,11 +132,11 @@ export const usePackageBottles = (packageInfo: PackageInfo | null) => {
         return {
           ...bottle,
           // Map the intro questions field from either format
-          introQuestions: bottle["Intro Questions"],
+          introQuestions: bottle["Intro Questions"] || null,
           // Map the deep questions field from either format
-          deepQuestions: bottle["Deep Question"],
+          deepQuestions: bottle["Deep Question"] || null,
           // Map the final questions field from either format
-          finalQuestions: bottle["Final Questions"],
+          finalQuestions: bottle["Final Questions"] || null,
         };
       });
       

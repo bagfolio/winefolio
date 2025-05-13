@@ -37,15 +37,15 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
   // Initialize responses when bottles data changes
   useEffect(() => {
     if (bottlesData.length > 0) {
-      console.log('Initializing tasting responses with bottles:', bottlesData);
+      console.log('🍷 Initializing tasting responses with bottles:', bottlesData.map(b => b.Name));
       initializeTastingResponses(bottlesData);
       
       // Generate dynamic questions based on bottle data
       const questions = getAvailableQuestions(bottlesData);
       setDynamicQuestions(questions);
-      console.log('Generated dynamic questions:', questions);
+      console.log('📝 Generated dynamic questions:', questions.length);
     }
-  }, [bottlesData]);
+  }, [bottlesData, initializeTastingResponses]);
 
   // Log key state changes
   useEffect(() => {
@@ -54,7 +54,8 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
     console.log(`  - User info: ${userInfo ? 'Present' : 'Missing'}`);
     console.log(`  - Package info: ${packageInfo ? 'Present' : 'Missing'}`);
     console.log(`  - Bottles data: ${bottlesData.length} bottles`);
-  }, [currentQuestionIndex, userInfo, packageInfo, bottlesData.length]);
+    console.log(`  - Loading state: ${loading ? 'Loading' : 'Not loading'}`);
+  }, [currentQuestionIndex, userInfo, packageInfo, bottlesData.length, loading]);
 
   const value: WineTastingContextType = {
     currentQuestionIndex,

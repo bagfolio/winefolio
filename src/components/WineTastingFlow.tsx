@@ -26,6 +26,7 @@ const WineTastingFlow = () => {
     console.log('🚀 WineTastingFlow initialized');
     console.log('📦 Package info:', packageInfo ? JSON.stringify(packageInfo, null, 2) : 'None');
     console.log('👤 User info:', userInfo ? JSON.stringify(userInfo, null, 2) : 'None');
+    console.log('🔢 Current question index:', currentQuestionIndex);
     
     // Add a debugging interval
     const debugInterval = setInterval(() => {
@@ -43,7 +44,7 @@ const WineTastingFlow = () => {
   const { 
     bottlesData, 
     loading: bottlesLoading 
-  } = usePackageBottles(userInfo ? packageInfo : null);
+  } = usePackageBottles(userInfo && packageInfo ? packageInfo : null);
   
   const { 
     dynamicQuestions, 
@@ -76,16 +77,16 @@ const WineTastingFlow = () => {
       setInitialLoadAttempted(true);
       
       // If we have a package but no bottles, show a toast
-      if (packageInfo && packageInfo.package_id) {
+      if (packageInfo && packageInfo.package_id && currentQuestionIndex > 0) {
         toast.error('Could not load wine data. Please check your connection and try again.');
       }
     }
-  }, [bottlesData, setBottlesData, bottlesLoading, packageInfo]);
+  }, [bottlesData, setBottlesData, bottlesLoading, packageInfo, currentQuestionIndex]);
   
   // Add a timer to automatically hide the loading screen after 15 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (contextLoading || bottlesLoading || questionsLoading) {
+      if ((contextLoading || bottlesLoading || questionsLoading) && currentQuestionIndex > 0) {
         console.log('⏱️ Loading timeout reached, forcing loading state to false');
         if (setLoading) setLoading(false);
         setInitialLoadAttempted(true);
@@ -94,7 +95,7 @@ const WineTastingFlow = () => {
     }, 15000); // 15 second timeout
     
     return () => clearTimeout(timer);
-  }, [contextLoading, bottlesLoading, questionsLoading, setLoading]);
+  }, [contextLoading, bottlesLoading, questionsLoading, setLoading, currentQuestionIndex]);
   
   // Force the first question (sign-in) if currentQuestionIndex is 0
   useEffect(() => {
@@ -106,11 +107,18 @@ const WineTastingFlow = () => {
   }, [currentQuestionIndex]);
   
   // Show loading screen if any data is being loaded and we haven't tried loading yet
-  const isLoading = (contextLoading || bottlesLoading || questionsLoading) && !initialLoadAttempted;
+  // Only show loading after login (currentQuestionIndex > 0)
+  const isLoading = (contextLoading || bottlesLoading || questionsLoading) && 
+                   !initialLoadAttempted && 
+                   currentQuestionIndex > 0;
   
   // If loading takes too long but we have no data and we've already attempted to load
   // Only show error screen if we're past the login step (currentQuestionIndex > 0)
-  const noDataAfterLoading = bottlesData.length === 0 && initialLoadAttempted && !isLoading && currentQuestionIndex > 0 && packageInfo;
+  const noDataAfterLoading = bottlesData.length === 0 && 
+                             initialLoadAttempted && 
+                             !isLoading && 
+                             currentQuestionIndex > 0 && 
+                             packageInfo;
   
   // Log the current application state
   useEffect(() => {
@@ -119,14 +127,15 @@ const WineTastingFlow = () => {
     console.log(`  - noDataAfterLoading: ${noDataAfterLoading}`);
     console.log(`  - dynamicQuestions: ${dynamicQuestions.length}`);
     console.log(`  - currentQuestionIndex: ${currentQuestionIndex}`);
-  }, [isLoading, noDataAfterLoading, dynamicQuestions.length, currentQuestionIndex]);
+    console.log(`  - userInfo present: ${!!userInfo}`);
+  }, [isLoading, noDataAfterLoading, dynamicQuestions.length, currentQuestionIndex, userInfo]);
   
   if (isLoading) {
     console.log('⏳ Showing loading screen...');
     return <LoadingScreen />;
   }
   
-  // Check if we should show sign in screen
+  // Always show sign in screen when currentQuestionIndex is 0, regardless of other state
   if (currentQuestionIndex === 0) {
     console.log('👋 Showing sign in screen');
     // Always use the first question (should be signin) when index is 0
