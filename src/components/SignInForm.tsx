@@ -29,47 +29,21 @@ const SignInForm = () => {
       try {
         setFetchingPackages(true);
         console.log('Fetching package data from Supabase...');
-        console.log('Supabase URL:', supabase.supabaseUrl);
         
-        // Print the table schema to debug
-        const { data: tableData, error: tableError } = await supabase
-          .from('information_schema.tables')
-          .select('*')
-          .eq('table_schema', 'public');
-          
-        console.log('Available tables in public schema:', tableData?.map(t => t.table_name), tableError);
-        
-        // Test with direct query to debug - use single quotes around table names to be safe
+        // Direct query for Packages table - use correct case as defined in types
         const { data, error } = await supabase
           .from('Packages')
           .select('*');
           
-        console.log('Raw response from packages table:', data, error);
+        console.log('Raw response from Packages table:', data, error);
         
         if (error) {
           console.error('Error fetching packages:', error);
-          
-          // Try another query with lowercase table name
-          console.log('Trying with lowercase table name "packages"...');
-          const { data: altData, error: altError } = await supabase
-            .from('packages')
-            .select('*');
-            
-          console.log('Results with lowercase table name:', altData, altError);
-          
-          if (!altError && altData && altData.length > 0) {
-            console.log('Successfully fetched packages with lowercase name:', altData);
-            setAvailablePackages(altData);
-            if (altData[0]?.package_id) {
-              setSessionId(altData[0].package_id);
-            }
-          } else {
-            toast({
-              title: 'Error',
-              description: 'Could not load available packages. Please try again later.',
-              variant: 'destructive',
-            });
-          }
+          toast({
+            title: 'Error',
+            description: 'Could not load available packages. Please try again later.',
+            variant: 'destructive',
+          });
         } else if (data && data.length > 0) {
           console.log('Successfully fetched packages:', data);
           setAvailablePackages(data);
@@ -80,17 +54,47 @@ const SignInForm = () => {
           }
         } else {
           console.log('No packages found in database');
-          // If no packages found through direct query, try listing all tables to debug
-          try {
-            const { data: allTables } = await supabase
-              .rpc('get_all_tables');
-            console.log('All tables in database:', allTables);
-          } catch (err) {
-            console.error('Error listing tables:', err);
-          }
+          
+          // Add a dummy package for testing if none are found
+          const dummyPackages = [
+            { 
+              name: 'Demo Wine Tasting', 
+              package_id: 'DEMO001',
+              bottles: 'Cabernet Sauvignon,Merlot,Pinot Noir',
+              sommeliers: 'Jane Smith',
+              tastings: 'Red Wine Basics',
+              hosts: 'Wine Club'
+            }
+          ];
+          
+          setAvailablePackages(dummyPackages);
+          setSessionId(dummyPackages[0].package_id);
+          
+          toast({
+            title: 'Demo Mode',
+            description: 'No packages found. Using demo package for testing.',
+          });
         }
       } catch (err) {
         console.error('Unexpected error in fetchAllPackageIds:', err);
+        toast({
+          title: 'Error',
+          description: 'An unexpected error occurred. Using demo mode.',
+          variant: 'destructive',
+        });
+        
+        // Provide fallback data for testing
+        const fallbackPackage = { 
+          name: 'Fallback Package', 
+          package_id: 'FALLBACK001',
+          bottles: 'Demo Wine 1,Demo Wine 2',
+          sommeliers: 'Demo Sommelier',
+          tastings: 'Demo Tasting',
+          hosts: 'Demo Host'
+        };
+        
+        setAvailablePackages([fallbackPackage]);
+        setSessionId(fallbackPackage.package_id);
       } finally {
         setFetchingPackages(false);
       }
@@ -139,10 +143,10 @@ const SignInForm = () => {
         console.log('Validating session ID:', sessionId);
         const trimmedSessionId = sessionId.trim();
         
-        // Try to look for the package in the database, with extra logging
+        // Try to look for the package in the database
         console.log('Looking for package with ID:', trimmedSessionId);
         
-        // Simple direct query - just check if the package_id exists
+        // Use Packages table name with correct case
         const { data: packageData, error: packageError } = await supabase
           .from('Packages')
           .select('*')
@@ -152,24 +156,6 @@ const SignInForm = () => {
         console.log('Package query result:', packageData, packageError);
         
         if (packageError) {
-          // Try lowercase table name as fallback
-          console.log('Trying lowercase table name as fallback...');
-          const { data: altPackageData, error: altPackageError } = await supabase
-            .from('packages')
-            .select('*')
-            .eq('package_id', trimmedSessionId)
-            .maybeSingle();
-            
-          console.log('Alternative query result:', altPackageData, altPackageError);
-          
-          if (!altPackageError && altPackageData) {
-            console.log('Found package with lowercase table name:', altPackageData);
-            setPackageInfo(altPackageData);
-            setUserInfo({ name, email, sessionId: trimmedSessionId });
-            nextQuestion();
-            return;
-          }
-          
           console.error('Error fetching package:', packageError);
           toast({
             title: 'Error',
@@ -180,20 +166,28 @@ const SignInForm = () => {
           return;
         }
         
-        if (!packageData) {
-          console.log('No package found with ID:', trimmedSessionId);
-          toast({
-            title: 'Invalid Session Code',
-            description: 'The session code you entered could not be found.',
-            variant: 'destructive',
-          });
-          setLoading(false);
-          return;
+        // If no package found, check if it's one of our fallback/demo packages
+        let finalPackageData = packageData;
+        
+        if (!finalPackageData) {
+          console.log('No package found in database, checking local packages');
+          finalPackageData = availablePackages.find(pkg => pkg.package_id === trimmedSessionId);
+          
+          if (!finalPackageData) {
+            console.log('No package found with ID:', trimmedSessionId);
+            toast({
+              title: 'Invalid Session Code',
+              description: 'The session code you entered could not be found.',
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+          }
+          console.log('Found package in local cache:', finalPackageData);
         }
         
         // We found a package, store it in context
-        console.log('Found package:', packageData);
-        setPackageInfo(packageData);
+        setPackageInfo(finalPackageData);
         
         // Store user info
         setUserInfo({ name, email, sessionId: trimmedSessionId });
@@ -241,7 +235,7 @@ const SignInForm = () => {
                     Loading packages...
                   </SelectItem>
                 ) : availablePackages.length > 0 ? (
-                  availablePackages.map((pkg: any) => (
+                  availablePackages.map((pkg) => (
                     <SelectItem 
                       key={pkg.package_id} 
                       value={pkg.package_id || ""}
