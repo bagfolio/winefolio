@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,7 +33,7 @@ const SignInForm = () => {
         setConnectionStatus('Starting to fetch package data from Supabase...');
         
         // Try fetching from the Packages table
-        setConnectionStatus(prev => `${prev}\nAttempting to query the "Packages" table...`);
+        setConnectionStatus(prev => `${prev}\nAttempting to query the "Packages" table...");
         
         const { data, error } = await supabase
           .from('Packages')
@@ -65,9 +64,8 @@ const SignInForm = () => {
             setSelectedPackage(formattedPackages[0]);
           }
           
-          toast({
-            title: 'Connection Successful',
-            description: `Found ${data.length} wine tasting packages.`,
+          toast.success('Connection Successful', {
+            description: `Found ${data.length} wine tasting packages.`
           });
         } else {
           setConnectionStatus(prev => `${prev}\nNo packages found in database or database is empty.`);
@@ -77,10 +75,8 @@ const SignInForm = () => {
         console.error('Error in fetchPackages:', err);
         setConnectionStatus(prev => `${prev}\nError encountered: ${err.message}`);
         
-        toast({
-          title: 'Database Connection Issue',
-          description: 'Could not load packages. Using demo packages instead.',
-          variant: 'destructive',
+        toast.error('Database Connection Issue', {
+          description: 'Could not load packages. Using demo packages instead.'
         });
         
         // Provide demo packages for testing

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';

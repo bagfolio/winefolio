@@ -1,6 +1,14 @@
 
-// Re-export the toast hooks directly from the shadcn/ui toast implementation
-import { useToast as useToastShadcn, toast as toastShadcn } from "@/hooks/use-toast";
+// Re-export sonner toast functionality for compatibility
+import { toast as sonnerToast } from "sonner";
 
-export const useToast = useToastShadcn;
-export const toast = toastShadcn;
+// These are compatibility functions for existing code
+export const useToast = () => {
+  return {
+    toast: sonnerToast,
+    dismiss: sonnerToast.dismiss,
+    toasts: [],
+  };
+};
+
+export const toast = sonnerToast;
