@@ -1,6 +1,7 @@
 
 import React, { createContext, useEffect, useState, useContext } from 'react';
 import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 type SupabaseContextType = {
@@ -31,13 +32,17 @@ export const SupabaseProvider = ({ children }: { children: React.ReactNode }) =>
         if (error) {
           console.error('Supabase connection error:', error);
           setConnectionError(error);
+          toast.error('Failed to connect to the database');
         } else {
           console.log('Supabase connection established successfully');
           setIsInitialized(true);
+          toast.success('Connected to the database');
         }
       } catch (err) {
         console.error('Failed to initialize Supabase:', err);
-        setConnectionError(err instanceof Error ? err : new Error('Unknown error initializing Supabase'));
+        const error = err instanceof Error ? err : new Error('Unknown error initializing Supabase');
+        setConnectionError(error);
+        toast.error('Failed to initialize the database connection');
       }
     };
 
