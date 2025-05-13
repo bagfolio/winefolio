@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 const SignInForm = () => {
   const { setUserInfo, nextQuestion, setLoading, setPackageInfo } = useWineTasting();
@@ -12,6 +12,7 @@ const SignInForm = () => {
   const [email, setEmail] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [errors, setErrors] = useState({ name: '', email: '', sessionId: '' });
+  const { toast } = useToast();
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -50,14 +51,13 @@ const SignInForm = () => {
       
       try {
         // Query the Packages table to find the package with the given session ID
-        const { data: packageData, error } = await supabase
+        const { data: packageData, error: packageError } = await supabase
           .from('Packages')
           .select('*')
-          .eq('package_id', sessionId)
-          .single();
+          .eq('package_id', sessionId);
         
-        if (error) {
-          console.error('Error fetching package:', error);
+        if (packageError || !packageData || packageData.length === 0) {
+          console.error('Error fetching package:', packageError || 'No package found');
           toast({
             title: 'Invalid Session Code',
             description: 'The session code you entered could not be found.',
@@ -67,22 +67,16 @@ const SignInForm = () => {
           return;
         }
         
-        if (packageData) {
-          // Store package info in context
-          setPackageInfo(packageData);
-          
-          // Store user info
-          setUserInfo({ name, email, sessionId });
-          
-          // Proceed to next question
-          nextQuestion();
-        } else {
-          toast({
-            title: 'Session Not Found',
-            description: 'Please check your session code and try again.',
-            variant: 'destructive',
-          });
-        }
+        // Store package info in context
+        const foundPackage = packageData[0];
+        console.log('Found package:', foundPackage);
+        setPackageInfo(foundPackage);
+        
+        // Store user info
+        setUserInfo({ name, email, sessionId });
+        
+        // Proceed to next question
+        nextQuestion();
       } catch (error) {
         console.error('Error in session validation:', error);
         toast({

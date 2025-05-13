@@ -1,12 +1,24 @@
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { UserInfo, WineTastingResponse, PackageInfo } from '../types';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+interface BottleData {
+  Name: string;
+  bottle_image_url: string;
+  introQuestions: any;
+  deepQuestions: any;
+  finalQuestions: any;
+  sequence: number;
+  [key: string]: any;
+}
 
 interface WineTastingContextType {
   currentQuestionIndex: number;
   userInfo: UserInfo | null;
   packageInfo: PackageInfo | null;
+  bottlesData: BottleData[];
   wineTastingResponse: {
     [bottleNumber: number]: WineTastingResponse;
   };
@@ -30,6 +42,7 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [packageInfo, setPackageInfo] = useState<PackageInfo | null>(null);
+  const [bottlesData, setBottlesData] = useState<BottleData[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   
@@ -53,6 +66,68 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
     }
   });
 
+  // Load bottles data when package info changes
+  useEffect(() => {
+    const fetchBottlesData = async () => {
+      if (!packageInfo || !packageInfo.bottles) return;
+      
+      setLoading(true);
+      try {
+        // Parse bottle IDs from the package
+        const bottleIds = packageInfo.bottles.split(',').map(id => id.trim());
+        console.log('Fetching bottles with IDs:', bottleIds);
+        
+        if (bottleIds.length === 0) {
+          console.log('No bottle IDs found in package');
+          return;
+        }
+        
+        // Fetch bottles data
+        const { data: bottles, error } = await supabase
+          .from('Bottles')
+          .select('*')
+          .in('Name', bottleIds)
+          .order('sequence', { ascending: true });
+        
+        if (error) {
+          console.error('Error fetching bottles:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load bottle information.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        console.log('Fetched bottles:', bottles);
+        setBottlesData(bottles || []);
+        
+        // Initialize tasting responses for all bottles
+        const initialResponses: { [bottleNumber: number]: WineTastingResponse } = {};
+        bottles?.forEach((bottle, index) => {
+          initialResponses[index + 1] = {
+            initialThoughts: '',
+            rating: 5,
+            fruitFlavors: [],
+            acidityRating: 5,
+            additionalThoughts: '',
+          };
+        });
+        
+        // Only set if we have bottles to avoid wiping out existing responses
+        if (Object.keys(initialResponses).length > 0) {
+          setWineTastingResponse(initialResponses);
+        }
+      } catch (error) {
+        console.error('Error in fetchBottlesData:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchBottlesData();
+  }, [packageInfo, toast]);
+
   const nextQuestion = () => {
     setCurrentQuestionIndex((prev) => prev + 1);
   };
@@ -63,7 +138,7 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const submitResponses = () => {
     // In a real app, this would send data to a backend API
-    console.log('Submitting responses:', { userInfo, packageInfo, wineTastingResponse });
+    console.log('Submitting responses:', { userInfo, packageInfo, wineTastingResponse, bottlesData });
     
     // Show success toast
     toast({
@@ -76,6 +151,7 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
     currentQuestionIndex,
     userInfo,
     packageInfo,
+    bottlesData,
     wineTastingResponse,
     loading,
     setLoading,
