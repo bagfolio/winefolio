@@ -12,8 +12,50 @@ export const useBottlesData = (packageInfo: PackageInfo | null) => {
 
   useEffect(() => {
     const fetchBottlesData = async () => {
-      if (!packageInfo || !packageInfo.bottles) {
-        console.log('No package info or bottles available');
+      if (!packageInfo) {
+        console.log('No package info available');
+        return;
+      }
+      
+      // If no bottles found in package, try to fetch all bottles
+      if (!packageInfo.bottles) {
+        console.log('No bottles information in package, will try to fetch all bottles');
+        
+        setLoading(true);
+        try {
+          // Fetch all bottles, ordered by sequence
+          const { data: allBottles, error } = await supabase
+            .from('Bottles')
+            .select('*')
+            .order('sequence', { ascending: true });
+            
+          if (error) {
+            console.error('Error fetching all bottles:', error);
+            toast({
+              title: 'Error',
+              description: 'Failed to load bottle information.',
+              variant: 'destructive',
+            });
+          } else if (allBottles && allBottles.length > 0) {
+            console.log('Found all bottles:', allBottles);
+            setBottlesData(allBottles);
+          } else {
+            console.log('No bottles found in the database');
+            toast({
+              title: 'Warning',
+              description: 'No wine bottle information available for this tasting session.',
+            });
+          }
+        } catch (error) {
+          console.error('Error in fetchBottlesData:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load tasting information.',
+            variant: 'destructive',
+          });
+        } finally {
+          setLoading(false);
+        }
         return;
       }
       
@@ -29,7 +71,7 @@ export const useBottlesData = (packageInfo: PackageInfo | null) => {
           return;
         }
         
-        // Fetch bottles data
+        // Fetch bottles data using IN clause for exact matches
         const { data: bottles, error } = await supabase
           .from('Bottles')
           .select('*')
@@ -47,27 +89,43 @@ export const useBottlesData = (packageInfo: PackageInfo | null) => {
           return;
         }
         
-        console.log('Fetched bottles:', bottles);
+        console.log('Fetched bottles with exact match:', bottles);
         
         if (!bottles || bottles.length === 0) {
-          console.log('No bottles found with the provided names:', bottleNames);
-          // If no bottles are found using direct matching, try using ILIKE for case-insensitive matching
-          const { data: fallbackBottles, error: fallbackError } = await supabase
-            .from('Bottles')
-            .select('*')
-            .or(bottleNames.map(name => `Name.ilike.${name}`).join(','));
+          console.log('No bottles found with exact names, trying case-insensitive search');
+          
+          // If no bottles found using direct matching, try using OR conditions with ILIKE for each bottle name
+          let query = supabase.from('Bottles').select('*');
+          
+          // Build the query with multiple ILIKE conditions
+          const conditions = bottleNames.map(name => `Name.ilike.%${name}%`).join(',');
+          
+          console.log('Using ILIKE conditions:', conditions);
+          const { data: fallbackBottles, error: fallbackError } = await query.or(conditions);
             
           if (fallbackError || !fallbackBottles || fallbackBottles.length === 0) {
-            toast({
-              title: 'Warning',
-              description: 'No wine bottle information found for this tasting session.',
-            });
-            setLoading(false);
-            return;
+            console.log('No bottles found with case-insensitive search either');
+            
+            // As a final fallback, just get some bottles to show
+            const { data: anyBottles, error: anyError } = await supabase
+              .from('Bottles')
+              .select('*')
+              .order('sequence', { ascending: true })
+              .limit(3);
+              
+            if (anyBottles && anyBottles.length > 0) {
+              console.log('Using fallback bottles:', anyBottles);
+              setBottlesData(anyBottles);
+            } else {
+              toast({
+                title: 'Warning',
+                description: 'No wine bottle information found for this tasting session.',
+              });
+            }
+          } else {
+            console.log('Found bottles using case-insensitive search:', fallbackBottles);
+            setBottlesData(fallbackBottles);
           }
-          
-          console.log('Found bottles using fallback search:', fallbackBottles);
-          setBottlesData(fallbackBottles);
         } else {
           setBottlesData(bottles);
         }
