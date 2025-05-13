@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
 import SignInForm from './SignInForm';
@@ -15,6 +15,7 @@ import LoadingScreen from './LoadingScreen';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { BottleData } from '@/context/types';
+import { Question } from '@/types';
 
 const WineTastingFlow = () => {
   const { 
@@ -26,7 +27,10 @@ const WineTastingFlow = () => {
     packageInfo 
   } = useWineTasting();
   
-  const currentQuestion = questions[currentQuestionIndex];
+  // State to hold dynamic questions based on fetched data
+  const [dynamicQuestions, setDynamicQuestions] = useState<Question[]>(questions);
+  
+  const currentQuestion = dynamicQuestions[currentQuestionIndex] || questions[currentQuestionIndex];
   
   useEffect(() => {
     // Log bottles data for debugging
@@ -106,6 +110,9 @@ const WineTastingFlow = () => {
         setBottlesData(sortedBottles as unknown as BottleData[]);
         console.log('Sorted bottles:', sortedBottles);
         
+        // Now fetch questions for these bottles
+        await fetchQuestionsForBottles(sortedBottles as unknown as BottleData[]);
+        
       } catch (err) {
         console.error('Failed to fetch bottles:', err);
         toast.error('An error occurred while loading bottle data');
@@ -118,9 +125,209 @@ const WineTastingFlow = () => {
       fetchBottlesForPackage();
     }
   }, [packageInfo, setLoading, setBottlesData]);
+  
+  // New function to fetch questions for bottles
+  const fetchQuestionsForBottles = async (bottles: BottleData[]) => {
+    if (!bottles || bottles.length === 0) return;
+    
+    try {
+      // Collect all bottle names for the query
+      const bottleNames = bottles.map(bottle => bottle.Name).filter(name => name !== null) as string[];
+      
+      if (bottleNames.length === 0) {
+        console.warn('No valid bottle names to fetch questions for');
+        return;
+      }
+      
+      console.log('Fetching questions for bottles:', bottleNames);
+      
+      // Fetch questions related to these bottles
+      const { data: questionData, error } = await supabase
+        .from('Questions')
+        .select('*')
+        .in('Bottles', bottleNames);
+        
+      if (error) {
+        console.error('Error fetching questions:', error);
+        toast.error('Failed to load bottle questions');
+        return;
+      }
+      
+      if (!questionData || questionData.length === 0) {
+        console.warn('No questions found for the selected bottles');
+        // Continue with default questions
+        return;
+      }
+      
+      console.log('Fetched questions data:', questionData);
+      
+      // Map the questions to the bottles and generate dynamic questions
+      const mappedQuestions = generateDynamicQuestionsFromData(bottles, questionData);
+      setDynamicQuestions(mappedQuestions);
+      
+    } catch (err) {
+      console.error('Failed to fetch questions:', err);
+      toast.error('An error occurred while loading questions');
+    }
+  };
+  
+  // Function to generate dynamic questions based on bottle and question data
+  const generateDynamicQuestionsFromData = (bottles: BottleData[], questionData: any[]): Question[] => {
+    const dynamicQuestions: Question[] = [];
+    
+    // Start with signin question
+    dynamicQuestions.push({
+      id: 1,
+      type: 'signin',
+      question: 'Welcome to the Wine Tasting Experience',
+      description: 'Please sign in to get started'
+    });
+    
+    // Generate questions for each bottle
+    bottles.forEach((bottle, bottleIndex) => {
+      const bottleNumber = bottleIndex + 1;
+      const bottleName = bottle.Name || `Bottle ${bottleNumber}`;
+      
+      // Add bottle interlude
+      dynamicQuestions.push({
+        id: 100 + (bottleNumber * 10),
+        type: 'interlude',
+        question: `Now let's taste bottle #${bottleNumber}: ${bottleName}`,
+        description: 'Prepare your palate for the next wine',
+        bottleNumber
+      });
+      
+      // Find questions for this specific bottle
+      const bottleQuestions = questionData.filter(q => 
+        q.Bottles === bottleName || 
+        (q.Bottles && q.Bottles.includes(bottleName))
+      );
+      
+      // Add intro questions
+      const introQ = bottleQuestions.find(q => q["Question Set Type"] === "Intro");
+      dynamicQuestions.push({
+        id: 100 + (bottleNumber * 10) + 1,
+        type: getQuestionType(introQ?.["Response Type"] || "text"),
+        question: introQ?.["Question Text"] || 
+                 (bottle.introQuestions ? 
+                  getJsonProperty(bottle.introQuestions, 'question', 'What are your initial thoughts about this wine?') : 
+                  'What are your initial thoughts about this wine?'),
+        description: bottle.introQuestions ? 
+                     getJsonProperty(bottle.introQuestions, 'description', 'Share your first impressions') : 
+                     'Share your first impressions',
+        options: parseOptions(introQ?.choices),
+        bottleNumber
+      });
+      
+      // Add deep dive questions  
+      const deepQ = bottleQuestions.find(q => q["Question Set Type"] === "Deep Dive");
+      dynamicQuestions.push({
+        id: 100 + (bottleNumber * 10) + 2,
+        type: getQuestionType(deepQ?.["Response Type"] || "scale"),
+        question: deepQ?.["Question Text"] || 
+                 (bottle.deepQuestions ? 
+                  getJsonProperty(bottle.deepQuestions, 'question', 'How would you rate this wine overall?') : 
+                  'How would you rate this wine overall?'),
+        description: bottle.deepQuestions ? 
+                    getJsonProperty(bottle.deepQuestions, 'description', 'Rate from 1 (poor) to 10 (excellent)') : 
+                    'Rate from 1 (poor) to 10 (excellent)',
+        options: parseOptions(deepQ?.choices),
+        bottleNumber
+      });
+      
+      // Add flavor questions (always multiple choice)
+      dynamicQuestions.push({
+        id: 100 + (bottleNumber * 10) + 3,
+        type: 'multipleChoice',
+        question: 'What fruit flavors do you detect in this wine?',
+        options: [
+          'Apple', 'Pear', 'Citrus', 'Tropical', 
+          'Cherry', 'Strawberry', 'Raspberry', 'Blueberry',
+          'Plum', 'Blackberry', 'Currant', 'Other'
+        ],
+        bottleNumber
+      });
+      
+      // Add final questions
+      const finalQ = bottleQuestions.find(q => q["Question Set Type"] === "Final");
+      dynamicQuestions.push({
+        id: 100 + (bottleNumber * 10) + 4,
+        type: getQuestionType(finalQ?.["Response Type"] || "text"),
+        question: finalQ?.["Question Text"] || 
+                 (bottle.finalQuestions ? 
+                  getJsonProperty(bottle.finalQuestions, 'question', 'Any additional thoughts about this wine?') : 
+                  'Any additional thoughts about this wine?'),
+        description: bottle.finalQuestions ? 
+                    getJsonProperty(bottle.finalQuestions, 'description', 'Share your final impressions') : 
+                    'Share your final impressions',
+        options: parseOptions(finalQ?.choices),
+        bottleNumber
+      });
+    });
+    
+    // Add final thanks screen
+    dynamicQuestions.push({
+      id: 9999,
+      type: 'thanks',
+      question: 'Thank you for participating!',
+      description: 'Your responses have been recorded.'
+    });
+    
+    console.log('Generated dynamic questions:', dynamicQuestions);
+    return dynamicQuestions;
+  };
+  
+  // Helper function to get question type based on response type
+  const getQuestionType = (responseType: string): Question['type'] => {
+    switch (responseType?.toLowerCase()) {
+      case 'scale':
+      case '1-10':
+      case 'rating':
+        return 'scale';
+      case 'multiple choice':
+      case 'multipleChoice':
+      case 'multiple':
+        return 'multipleChoice';
+      case 'text':
+      case 'textarea':
+      default:
+        return 'text';
+    }
+  };
+  
+  // Helper function to parse options from choices string
+  const parseOptions = (choices: string | null | undefined): string[] | undefined => {
+    if (!choices) return undefined;
+    
+    try {
+      // Try to parse as JSON
+      return JSON.parse(choices);
+    } catch (e) {
+      // If not valid JSON, split by comma
+      return choices.split(',').map(c => c.trim());
+    }
+  };
+  
+  // Helper function to safely extract properties from Json
+  const getJsonProperty = (json: any, property: string, defaultValue: string): string => {
+    if (!json) return defaultValue;
+    
+    // If json is an object, try to get the property
+    if (typeof json === 'object' && json !== null) {
+      const value = (json as Record<string, any>)[property];
+      return typeof value === 'string' ? value : defaultValue;
+    }
+    
+    // If json is a string, return it as is
+    if (typeof json === 'string') {
+      return json;
+    }
+    
+    return defaultValue;
+  };
 
   const renderQuestionComponent = () => {
-    switch (currentQuestion.type) {
+    switch (currentQuestion?.type) {
       case 'signin':
         return <SignInForm />;
       case 'text':

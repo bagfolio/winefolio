@@ -61,6 +61,3 @@ export const questions: Question[] = [
     description: 'Your responses have been recorded.'
   }
 ];
-
-// Note: The static questions array is now used as a fallback.
-// In the WineTastingContext, we'll use the dynamically generated questions.
