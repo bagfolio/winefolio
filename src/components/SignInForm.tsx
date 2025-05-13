@@ -5,6 +5,13 @@ import { Input } from '@/components/ui/input';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const SignInForm = () => {
   const { setUserInfo, nextQuestion, setLoading, setPackageInfo } = useWineTasting();
@@ -15,7 +22,7 @@ const SignInForm = () => {
   const [availablePackages, setAvailablePackages] = useState([]);
   const { toast } = useToast();
   
-  // Debug function to fetch and log all package IDs on component mount
+  // Fetch all package IDs on component mount
   useEffect(() => {
     const fetchAllPackageIds = async () => {
       try {
@@ -30,7 +37,7 @@ const SignInForm = () => {
           console.log('Available package IDs in database:', data);
           setAvailablePackages(data);
           
-          // If test data exists, pre-fill the session ID for easier testing
+          // If packages exist, pre-fill the session ID for easier testing
           if (data.length > 0) {
             setSessionId(data[0].package_id);
           }
@@ -151,27 +158,26 @@ const SignInForm = () => {
             <label htmlFor="sessionId" className="block text-sm font-medium text-white mb-1">
               Session ID
             </label>
-            <Input
-              id="sessionId"
-              type="text"
+            <Select 
               value={sessionId}
-              onChange={(e) => setSessionId(e.target.value)}
-              className="bg-purple-800/30 border-purple-700 text-white placeholder-purple-300"
-              placeholder="Enter session code"
-            />
+              onValueChange={(value) => setSessionId(value)}
+            >
+              <SelectTrigger className="bg-purple-800/30 border-purple-700 text-white">
+                <SelectValue placeholder="Select a session code" />
+              </SelectTrigger>
+              <SelectContent className="bg-purple-900 border-purple-700 text-white">
+                {availablePackages.map((pkg: any) => (
+                  <SelectItem 
+                    key={pkg.package_id} 
+                    value={pkg.package_id}
+                    className="hover:bg-purple-800 focus:bg-purple-800 text-white"
+                  >
+                    {pkg.name} ({pkg.package_id})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {errors.sessionId && <p className="text-red-300 text-sm mt-1">{errors.sessionId}</p>}
-            {availablePackages.length > 0 && (
-              <div className="mt-2">
-                <p className="text-xs text-purple-300">Available test session codes:</p>
-                <ul className="text-xs text-purple-200 list-disc pl-5 mt-1">
-                  {availablePackages.map((pkg: any) => (
-                    <li key={pkg.package_id} className="cursor-pointer hover:text-white" onClick={() => setSessionId(pkg.package_id)}>
-                      {pkg.name}: <span className="font-mono">{pkg.package_id}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-white mb-1">
