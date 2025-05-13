@@ -14,7 +14,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
   global: {
     // Enable more detailed error messages during development
-    fetch: (...args) => fetch(...args)
+    fetch: (url, options) => fetch(url, options)
   }
 });
 

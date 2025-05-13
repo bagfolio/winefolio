@@ -5,12 +5,14 @@ import { Json } from '../integrations/supabase/types';
 export interface BottleData {
   Name: string;
   bottle_image_url: string | null;
-  introQuestions: Json | null;
-  deepQuestions: Json | null;
-  finalQuestions: Json | null;
-  'Intro Questions'?: string | null;
-  'Deep Question'?: string | null;
-  'Final Questions'?: Json | null;
+  // Support both naming conventions for questions
+  introQuestions?: Json | null;
+  deepQuestions?: Json | null;
+  finalQuestions?: Json | null;
+  // Database fields with spaces in names
+  "Intro Questions"?: string | null;
+  "Deep Question"?: string | null;
+  "Final Questions"?: Json | null;
   sequence: number | null;
   [key: string]: any;
 }

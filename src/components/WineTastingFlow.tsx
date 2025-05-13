@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
@@ -38,9 +37,10 @@ const WineTastingFlow = () => {
       console.log('WineTastingFlow has access to bottles:', bottlesData);
       bottlesData.forEach((bottle, index) => {
         console.log(`Bottle ${index + 1}: ${bottle.Name}`, {
-          introQuestions: bottle.introQuestions,
-          deepQuestions: bottle.deepQuestions,
-          finalQuestions: bottle.finalQuestions
+          // Log both naming conventions to help debug
+          introQuestions: bottle.introQuestions || bottle["Intro Questions"],
+          deepQuestions: bottle.deepQuestions || bottle["Deep Question"],
+          finalQuestions: bottle.finalQuestions || bottle["Final Questions"]
         });
       });
     } else {
@@ -123,19 +123,19 @@ const WineTastingFlow = () => {
           return aIndex - bIndex;
         });
         
-        // Cast the sorted bottles to BottleData type and map fields properly
+        // Process bottles to have consistent field names
         const mappedBottles = sortedBottles.map(bottle => {
-          // Handle the field mapping - some bottles might have different field structures
+          // Create a new object with both naming conventions
           return {
             ...bottle,
             // Map the intro questions field from either format
-            introQuestions: bottle.introQuestions || bottle["Intro Questions"],
+            introQuestions: bottle["Intro Questions"],
             // Map the deep questions field from either format
-            deepQuestions: bottle.deepQuestions || bottle["Deep Question"],
+            deepQuestions: bottle["Deep Question"],
             // Map the final questions field from either format
-            finalQuestions: bottle.finalQuestions || bottle["Final Questions"],
+            finalQuestions: bottle["Final Questions"],
           };
-        }) as unknown as BottleData[];
+        });
         
         console.log('Processed bottles with mapped fields:', mappedBottles);
         setBottlesData(mappedBottles);
@@ -266,12 +266,8 @@ const WineTastingFlow = () => {
         id: 100 + (bottleNumber * 10) + 1,
         type: getQuestionType(introQ?.["Response Type"] || "text"),
         question: introQ?.["Question Text"] || 
-                 (bottle.introQuestions ? 
-                  getJsonProperty(bottle.introQuestions, 'question', 'What are your initial thoughts about this wine?') : 
-                  'What are your initial thoughts about this wine?'),
-        description: bottle.introQuestions ? 
-                     getJsonProperty(bottle.introQuestions, 'description', 'Share your first impressions') : 
-                     'Share your first impressions',
+                 getJsonProperty(bottle["Intro Questions"], 'question', 'What are your initial thoughts about this wine?'),
+        description: getJsonProperty(bottle["Intro Questions"], 'description', 'Share your first impressions'),
         options: parseOptions(introQ?.choices),
         bottleNumber
       });
@@ -282,12 +278,8 @@ const WineTastingFlow = () => {
         id: 100 + (bottleNumber * 10) + 2,
         type: getQuestionType(deepQ?.["Response Type"] || "scale"),
         question: deepQ?.["Question Text"] || 
-                 (bottle.deepQuestions ? 
-                  getJsonProperty(bottle.deepQuestions, 'question', 'How would you rate this wine overall?') : 
-                  'How would you rate this wine overall?'),
-        description: bottle.deepQuestions ? 
-                    getJsonProperty(bottle.deepQuestions, 'description', 'Rate from 1 (poor) to 10 (excellent)') : 
-                    'Rate from 1 (poor) to 10 (excellent)',
+                 getJsonProperty(bottle["Deep Question"], 'question', 'How would you rate this wine overall?'),
+        description: getJsonProperty(bottle["Deep Question"], 'description', 'Rate from 1 (poor) to 10 (excellent)'),
         options: parseOptions(deepQ?.choices),
         bottleNumber
       });
@@ -311,12 +303,8 @@ const WineTastingFlow = () => {
         id: 100 + (bottleNumber * 10) + 4,
         type: getQuestionType(finalQ?.["Response Type"] || "text"),
         question: finalQ?.["Question Text"] || 
-                 (bottle.finalQuestions ? 
-                  getJsonProperty(bottle.finalQuestions, 'question', 'Any additional thoughts about this wine?') : 
-                  'Any additional thoughts about this wine?'),
-        description: bottle.finalQuestions ? 
-                    getJsonProperty(bottle.finalQuestions, 'description', 'Share your final impressions') : 
-                    'Share your final impressions',
+                 getJsonProperty(bottle["Final Questions"], 'question', 'Any additional thoughts about this wine?'),
+        description: getJsonProperty(bottle["Final Questions"], 'description', 'Share your final impressions'),
         options: parseOptions(finalQ?.choices),
         bottleNumber
       });
