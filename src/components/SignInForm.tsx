@@ -26,6 +26,9 @@ const SignInForm = () => {
   useEffect(() => {
     const fetchAllPackageIds = async () => {
       try {
+        // Clear logging so we can see what's happening
+        console.log('Fetching package data from Supabase...');
+        
         const { data, error } = await supabase
           .from('Packages')
           .select('package_id, name')
@@ -166,15 +169,21 @@ const SignInForm = () => {
                 <SelectValue placeholder="Select a session code" />
               </SelectTrigger>
               <SelectContent className="bg-purple-900 border-purple-700 text-white">
-                {availablePackages.map((pkg: any) => (
-                  <SelectItem 
-                    key={pkg.package_id} 
-                    value={pkg.package_id}
-                    className="hover:bg-purple-800 focus:bg-purple-800 text-white"
-                  >
-                    {pkg.name} ({pkg.package_id})
+                {availablePackages.length > 0 ? (
+                  availablePackages.map((pkg: any) => (
+                    <SelectItem 
+                      key={pkg.package_id} 
+                      value={pkg.package_id}
+                      className="hover:bg-purple-800 focus:bg-purple-800 text-white"
+                    >
+                      {pkg.name} ({pkg.package_id})
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="loading" disabled className="text-purple-300">
+                    Loading packages...
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
             {errors.sessionId && <p className="text-red-300 text-sm mt-1">{errors.sessionId}</p>}
