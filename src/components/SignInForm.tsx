@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useWineTasting } from '@/context/WineTastingContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 const SignInForm = () => {
-  const { setUserInfo, nextQuestion, setLoading } = useWineTasting();
+  const { setUserInfo, nextQuestion, setLoading, setPackageInfo } = useWineTasting();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [sessionId, setSessionId] = useState('');
@@ -16,7 +18,7 @@ const SignInForm = () => {
     return re.test(email);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     let valid = true;
@@ -43,15 +45,54 @@ const SignInForm = () => {
     setErrors(newErrors);
     
     if (valid) {
-      // Set loading to true before transitioning
+      // Set loading to true before validating session ID
       setLoading(true);
       
-      // Simulate a loading delay (can be removed in a real application)
-      setTimeout(() => {
-        setUserInfo({ name, email, sessionId });
-        nextQuestion();
-        setLoading(false); // Turn off loading after navigation
-      }, 3000); // 3 second loading for effect
+      try {
+        // Query the Packages table to find the package with the given session ID
+        const { data: packageData, error } = await supabase
+          .from('Packages')
+          .select('*')
+          .eq('package_id', sessionId)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching package:', error);
+          toast({
+            title: 'Invalid Session Code',
+            description: 'The session code you entered could not be found.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+        
+        if (packageData) {
+          // Store package info in context
+          setPackageInfo(packageData);
+          
+          // Store user info
+          setUserInfo({ name, email, sessionId });
+          
+          // Proceed to next question
+          nextQuestion();
+        } else {
+          toast({
+            title: 'Session Not Found',
+            description: 'Please check your session code and try again.',
+            variant: 'destructive',
+          });
+        }
+      } catch (error) {
+        console.error('Error in session validation:', error);
+        toast({
+          title: 'Error',
+          description: 'An unexpected error occurred. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 

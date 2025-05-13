@@ -1,17 +1,19 @@
 
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { UserInfo, WineTastingResponse } from '../types';
+import { UserInfo, WineTastingResponse, PackageInfo } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 
 interface WineTastingContextType {
   currentQuestionIndex: number;
   userInfo: UserInfo | null;
+  packageInfo: PackageInfo | null;
   wineTastingResponse: {
     [bottleNumber: number]: WineTastingResponse;
   };
   loading: boolean;
   setLoading: (isLoading: boolean) => void;
   setUserInfo: (info: UserInfo) => void;
+  setPackageInfo: (info: PackageInfo) => void;
   setInitialThoughts: (thoughts: string, bottleNumber?: number) => void;
   setRating: (rating: number, bottleNumber?: number) => void;
   setFruitFlavors: (flavors: string[], bottleNumber?: number) => void;
@@ -27,6 +29,7 @@ const WineTastingContext = createContext<WineTastingContextType | undefined>(und
 export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [packageInfo, setPackageInfo] = useState<PackageInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   
@@ -60,7 +63,7 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const submitResponses = () => {
     // In a real app, this would send data to a backend API
-    console.log('Submitting responses:', { userInfo, wineTastingResponse });
+    console.log('Submitting responses:', { userInfo, packageInfo, wineTastingResponse });
     
     // Show success toast
     toast({
@@ -72,10 +75,12 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
   const value = {
     currentQuestionIndex,
     userInfo,
+    packageInfo,
     wineTastingResponse,
     loading,
     setLoading,
     setUserInfo: (info: UserInfo) => setUserInfo(info),
+    setPackageInfo: (info: PackageInfo) => setPackageInfo(info),
     setInitialThoughts: (thoughts: string, bottleNumber = 1) => 
       setWineTastingResponse((prev) => ({
         ...prev,

@@ -5,6 +5,16 @@ export interface UserInfo {
   sessionId: string;
 }
 
+export interface PackageInfo {
+  name: string;
+  package_id: string;
+  sommeliers?: string;
+  tastings?: string;
+  hosts?: string;
+  bottles?: string;
+  [key: string]: any; // Allow for additional fields from Supabase
+}
+
 export interface WineTastingResponse {
   initialThoughts: string;
   rating: number;
