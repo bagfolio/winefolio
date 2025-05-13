@@ -1,3 +1,4 @@
+
 // Add additional utility functions for question handling
 
 import { Json } from '../integrations/supabase/types';
@@ -10,15 +11,29 @@ export const getQuestionType = (responseType: string): Question['type'] => {
     case 'scale':
     case '1-10':
     case 'rating':
+    case 'number':
       return 'scale';
     case 'multiple choice':
     case 'multipleChoice':
     case 'multiple':
+    case 'checkbox':
       return 'multipleChoice';
+    case 'audio':
+      return 'audio';
+    case 'video':
+      return 'video';
     case 'text':
     case 'textarea':
-    default:
+    case 'string':
       return 'text';
+    case 'interlude':
+      return 'interlude';
+    case 'thanks':
+      return 'thanks';
+    case 'signin':
+      return 'signin';
+    default:
+      return 'text'; // Default to text for unknown types
   }
 };
 

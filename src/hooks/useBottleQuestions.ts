@@ -159,9 +159,10 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
       
       // Add intro questions
       const introQ = bottleQuestions.find(q => q["Question Set Type"] === "Intro");
-      const introQuestion = {
+      const introType = getQuestionType(introQ?.["Response Type"] || "text") as Question['type'];
+      const introQuestion: Question = {
         id: 100 + (bottleNumber * 10) + 1,
-        type: getQuestionType(introQ?.["Response Type"] || "text"),
+        type: introType,
         question: introQ?.["Question Text"] || 
                  getJsonProperty(bottle["Intro Questions"], 'question', 'What are your initial thoughts about this wine?'),
         description: getJsonProperty(bottle["Intro Questions"], 'description', 'Share your first impressions'),
@@ -174,9 +175,10 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
       
       // Add deep dive questions  
       const deepQ = bottleQuestions.find(q => q["Question Set Type"] === "Deep Dive");
-      const deepQuestion = {
+      const deepType = getQuestionType(deepQ?.["Response Type"] || "scale") as Question['type'];
+      const deepQuestion: Question = {
         id: 100 + (bottleNumber * 10) + 2,
-        type: getQuestionType(deepQ?.["Response Type"] || "scale"),
+        type: deepType,
         question: deepQ?.["Question Text"] || 
                  getJsonProperty(bottle["Deep Question"], 'question', 'How would you rate this wine overall?'),
         description: getJsonProperty(bottle["Deep Question"], 'description', 'Rate from 1 (poor) to 10 (excellent)'),
@@ -188,7 +190,7 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
       dynamicQuestions.push(deepQuestion);
       
       // Add flavor questions (always multiple choice)
-      const flavorQuestion = {
+      const flavorQuestion: Question = {
         id: 100 + (bottleNumber * 10) + 3,
         type: 'multipleChoice',
         question: 'What fruit flavors do you detect in this wine?',
@@ -205,9 +207,10 @@ export const useBottleQuestions = (bottles: BottleData[]) => {
       
       // Add final questions
       const finalQ = bottleQuestions.find(q => q["Question Set Type"] === "Final");
-      const finalQuestion = {
+      const finalType = getQuestionType(finalQ?.["Response Type"] || "text") as Question['type'];
+      const finalQuestion: Question = {
         id: 100 + (bottleNumber * 10) + 4,
-        type: getQuestionType(finalQ?.["Response Type"] || "text"),
+        type: finalType,
         question: finalQ?.["Question Text"] || 
                  getJsonProperty(bottle["Final Questions"], 'question', 'Any additional thoughts about this wine?'),
         description: getJsonProperty(bottle["Final Questions"], 'description', 'Share your final impressions'),
