@@ -1,9 +1,10 @@
 
-import React, { createContext, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
 import { UserInfo, PackageInfo } from '../types';
 import { WineTastingContextType } from './types';
 import { useBottlesData } from '../hooks/useBottlesData';
 import { useWineTastingState } from '../hooks/useWineTastingState';
+import { getAvailableQuestions } from '@/utils/questionUtils';
 
 const WineTastingContext = createContext<WineTastingContextType | undefined>(undefined);
 
@@ -29,11 +30,20 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
   
   // Load bottles data when package info changes
   const { bottlesData, loading, setLoading } = useBottlesData(packageInfo);
+  
+  // State for dynamic questions
+  const [dynamicQuestions, setDynamicQuestions] = useState<any[]>([]);
 
   // Initialize responses when bottles data changes
   useEffect(() => {
     if (bottlesData.length > 0) {
+      console.log('Initializing tasting responses with bottles:', bottlesData);
       initializeTastingResponses(bottlesData);
+      
+      // Generate dynamic questions based on bottle data
+      const questions = getAvailableQuestions(bottlesData);
+      setDynamicQuestions(questions);
+      console.log('Generated dynamic questions:', questions);
     }
   }, [bottlesData]);
 

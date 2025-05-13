@@ -3,10 +3,10 @@ import { UserInfo, WineTastingResponse, PackageInfo } from '../types';
 
 export interface BottleData {
   Name: string;
-  bottle_image_url: string;
-  introQuestions: any;
-  deepQuestions: any;
-  finalQuestions: any;
+  bottle_image_url: string | null;
+  introQuestions: Record<string, any>;
+  deepQuestions: Record<string, any>;
+  finalQuestions: Record<string, any>;
   sequence: number;
   [key: string]: any;
 }

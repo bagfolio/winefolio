@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
 import SignInForm from './SignInForm';
@@ -14,8 +14,24 @@ import ProgressIndicator from './ProgressIndicator';
 import LoadingScreen from './LoadingScreen';
 
 const WineTastingFlow = () => {
-  const { currentQuestionIndex, loading } = useWineTasting();
+  const { currentQuestionIndex, loading, bottlesData } = useWineTasting();
   const currentQuestion = questions[currentQuestionIndex];
+  
+  useEffect(() => {
+    // Log bottles data for debugging
+    if (bottlesData && bottlesData.length > 0) {
+      console.log('WineTastingFlow has access to bottles:', bottlesData);
+      bottlesData.forEach((bottle, index) => {
+        console.log(`Bottle ${index + 1}: ${bottle.Name}`, {
+          introQuestions: bottle.introQuestions,
+          deepQuestions: bottle.deepQuestions,
+          finalQuestions: bottle.finalQuestions
+        });
+      });
+    } else {
+      console.log('No bottles data available in WineTastingFlow');
+    }
+  }, [bottlesData]);
 
   const renderQuestionComponent = () => {
     switch (currentQuestion.type) {

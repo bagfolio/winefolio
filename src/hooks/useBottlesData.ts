@@ -55,7 +55,9 @@ export const useBottlesData = (packageInfo: PackageInfo | null) => {
             });
           } else if (allBottles && allBottles.length > 0) {
             console.log('Found all bottles:', allBottles);
-            setBottlesData(allBottles);
+            // Process questions data before setting bottlesData
+            const processedBottles = processBottlesQuestions(allBottles);
+            setBottlesData(processedBottles);
           } else {
             console.log('No bottles found in the database');
             toast({
@@ -132,7 +134,9 @@ export const useBottlesData = (packageInfo: PackageInfo | null) => {
               
             if (anyBottles && anyBottles.length > 0) {
               console.log('Using fallback bottles:', anyBottles);
-              setBottlesData(anyBottles);
+              // Process questions data before setting bottlesData
+              const processedBottles = processBottlesQuestions(anyBottles);
+              setBottlesData(processedBottles);
             } else {
               toast({
                 title: 'Warning',
@@ -141,10 +145,14 @@ export const useBottlesData = (packageInfo: PackageInfo | null) => {
             }
           } else {
             console.log('Found bottles using case-insensitive search:', fallbackBottles);
-            setBottlesData(fallbackBottles);
+            // Process questions data before setting bottlesData
+            const processedBottles = processBottlesQuestions(fallbackBottles);
+            setBottlesData(processedBottles);
           }
         } else {
-          setBottlesData(bottles);
+          // Process questions data before setting bottlesData
+          const processedBottles = processBottlesQuestions(bottles);
+          setBottlesData(processedBottles);
         }
       } catch (error) {
         console.error('Error in fetchBottlesData:', error);
@@ -160,6 +168,50 @@ export const useBottlesData = (packageInfo: PackageInfo | null) => {
     
     fetchBottlesData();
   }, [packageInfo, toast]);
+  
+  // Helper function to process bottle questions data
+  const processBottlesQuestions = (bottles: any[]): BottleData[] => {
+    return bottles.map(bottle => {
+      // Ensure all question fields are properly formatted JSON objects
+      const processedBottle: BottleData = {
+        ...bottle,
+        introQuestions: ensureJsonObject(bottle.introQuestions || bottle["Intro Questions"]),
+        deepQuestions: ensureJsonObject(bottle.deepQuestions || bottle["Deep Question"]),
+        finalQuestions: ensureJsonObject(bottle.finalQuestions || bottle["Final Questions"]),
+        sequence: bottle.sequence || 0,
+        Name: bottle.Name || "Unknown Wine"
+      };
+      
+      console.log(`Processed bottle ${processedBottle.Name} with questions:`, {
+        intro: processedBottle.introQuestions,
+        deep: processedBottle.deepQuestions,
+        final: processedBottle.finalQuestions
+      });
+      
+      return processedBottle;
+    });
+  };
+  
+  // Helper function to ensure a value is a valid JSON object
+  const ensureJsonObject = (value: any): Record<string, any> => {
+    if (!value) return {};
+    
+    if (typeof value === 'string') {
+      try {
+        // Try to parse if it's a JSON string
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Failed to parse JSON string:', value);
+        return { text: value }; // Use the string as a text property
+      }
+    }
+    
+    if (typeof value === 'object') {
+      return value; // Already an object
+    }
+    
+    return {}; // Default empty object
+  };
 
   return { bottlesData, loading, setLoading };
 };

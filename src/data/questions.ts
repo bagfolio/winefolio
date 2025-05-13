@@ -1,121 +1,66 @@
 
-import { Question } from '../types';
+import { Question } from '@/types';
 
+/**
+ * Static fallback questions in case dynamic questions can't be generated
+ */
 export const questions: Question[] = [
   {
-    id: 0,
-    type: 'signin',
-    question: 'Please sign in to begin your wine tasting experience',
-  },
-  // First wine - initial thoughts
-  {
     id: 1,
-    type: 'text',
-    question: 'What do you think of the first wine (Pinot Noir) in your own words?',
-    bottleNumber: 1,
+    type: 'signin',
+    question: 'Welcome to the Wine Tasting Experience',
+    description: 'Please sign in to get started'
   },
+  
+  // Bottle 1 Questions
   {
-    id: 2,
-    type: 'scale',
-    question: 'On a scale of 1-10, how did you enjoy this Pinot Noir?',
-    bottleNumber: 1,
-  },
-  // Sommelier audio message for first wine
-  {
-    id: 3,
-    type: 'audio',
-    title: 'Sommelier\'s Notes: Argyle Pinot Noir',
-    description: 'Listen to hear special insights about this Pinot Noir',
-    mediaUrl: 'https://storage.googleapis.com/kyg-recordings/Argyle.m4a',
-    sommelierName: 'Alex',
-    bottleNumber: 1,
-  },
-  // First wine - deep dive
-  {
-    id: 4,
+    id: 110,
     type: 'interlude',
-    question: 'You are now moving to the deep dive section for the first wine (Pinot Noir).',
-    bottleNumber: 1,
+    question: 'Now let\'s taste the first wine',
+    description: 'Prepare your palate for the first wine',
+    bottleNumber: 1
   },
   {
-    id: 5,
+    id: 111,
+    type: 'text',
+    question: 'What are your initial thoughts about this wine?',
+    description: 'Share your first impressions',
+    bottleNumber: 1
+  },
+  {
+    id: 112,
+    type: 'scale',
+    question: 'How would you rate this wine overall?',
+    description: 'Rate from 1 (poor) to 10 (excellent)',
+    bottleNumber: 1
+  },
+  {
+    id: 113,
     type: 'multipleChoice',
-    question: 'What fruit flavors do you smell and taste in this Pinot Noir?',
-    options: ['Cherry', 'Raspberry', 'Cranberry', 'Strawberry', 'Plum'],
-    bottleNumber: 1,
+    question: 'What fruit flavors do you detect in this wine?',
+    options: [
+      'Apple', 'Pear', 'Citrus', 'Tropical', 
+      'Cherry', 'Strawberry', 'Raspberry', 'Blueberry',
+      'Plum', 'Blackberry', 'Currant', 'Other'
+    ],
+    bottleNumber: 1
   },
   {
-    id: 6,
-    type: 'scale',
-    question: 'How much did you enjoy the acidity of this Pinot Noir on a scale of 1-10?',
-    bottleNumber: 1,
-  },
-  {
-    id: 7,
+    id: 114,
     type: 'text',
-    question: 'Anything else the sommelier should know about what you thought of this Pinot Noir?',
-    bottleNumber: 1,
+    question: 'Any additional thoughts about this wine?',
+    description: 'Share your final impressions',
+    bottleNumber: 1
   },
-  // Interlude between wines
+  
+  // Thank you screen
   {
-    id: 8,
-    type: 'interlude',
-    question: 'Now we\'ll move on to the second wine. Take a moment to clear your palate before continuing.',
-    description: 'Please drink some water and perhaps have a neutral snack like crackers before the next wine.',
-  },
-  // Second wine - initial thoughts
-  {
-    id: 9,
-    type: 'text',
-    question: 'What do you think of the second wine (Chardonnay) in your own words?',
-    bottleNumber: 2,
-  },
-  {
-    id: 10,
-    type: 'scale',
-    question: 'On a scale of 1-10, how did you enjoy this Chardonnay?',
-    bottleNumber: 2,
-  },
-  // Sommelier video message for second wine
-  {
-    id: 11,
-    type: 'video',
-    title: 'Sommelier\'s Video Notes',
-    description: 'Watch the sommelier explain the unique qualities of this Chardonnay',
-    mediaUrl: 'https://storage.googleapis.com/kyg-recordings/IMG_3786.mov',
-    sommelierName: 'Michelle',
-    bottleNumber: 2,
-  },
-  // Second wine - deep dive
-  {
-    id: 12,
-    type: 'interlude',
-    question: 'You are now moving to the deep dive section for the second wine (Chardonnay).',
-    bottleNumber: 2,
-  },
-  {
-    id: 13,
-    type: 'multipleChoice',
-    question: 'What fruit flavors do you smell and taste in this Chardonnay?',
-    options: ['Citrus driven', 'Green apple', 'Pear', 'Peach', 'Tropical fruits'],
-    bottleNumber: 2,
-  },
-  {
-    id: 14,
-    type: 'scale',
-    question: 'How much did you enjoy the acidity of this Chardonnay on a scale of 1-10?',
-    bottleNumber: 2,
-  },
-  {
-    id: 15,
-    type: 'text',
-    question: 'Anything else the sommelier should know about what you thought of this Chardonnay?',
-    bottleNumber: 2,
-  },
-  // Thanks screen
-  {
-    id: 16,
+    id: 9999,
     type: 'thanks',
-    question: 'Thank you for completing the wine tasting! Your results will be emailed to you shortly.',
-  },
+    question: 'Thank you for participating!',
+    description: 'Your responses have been recorded.'
+  }
 ];
+
+// Note: The static questions array is now used as a fallback.
+// In the WineTastingContext, we'll use the dynamically generated questions.
