@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,8 +35,8 @@ const SignInForm = () => {
         // Log Supabase client details (without exposing sensitive information)
         console.log('Supabase client initialized:', !!supabase);
         
-        // Attempting to fetch the Packages table with correct capitalization
-        setDebugInfo(prev => prev + '\nAttempting to fetch from Packages table...');
+        // Use the exact capitalization from the database schema
+        setDebugInfo(prev => prev + '\nAttempting to fetch from "Packages" table with correct capitalization...');
         
         const { data: packagesData, error: packagesError } = await supabase
           .from('Packages')
