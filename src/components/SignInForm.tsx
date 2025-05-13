@@ -22,6 +22,7 @@ const SignInForm = () => {
   const [errors, setErrors] = useState({ name: '', email: '', sessionId: '' });
   const [availablePackages, setAvailablePackages] = useState<PackageInfo[]>([]);
   const [fetchingPackages, setFetchingPackages] = useState(true);
+  const [debugInfo, setDebugInfo] = useState<string>('');
   const { toast } = useToast();
   
   // Fetch all package IDs on component mount
@@ -29,105 +30,109 @@ const SignInForm = () => {
     const fetchAllPackageIds = async () => {
       try {
         setFetchingPackages(true);
-        console.log('Fetching package data from Supabase...');
+        setDebugInfo('Starting to fetch package data from Supabase...');
         
-        // Get Supabase URL for debugging
-        console.log('Supabase URL:', process.env.SUPABASE_URL || 'Not available in env');
+        // Log Supabase client details (without exposing sensitive information)
+        console.log('Supabase client initialized:', !!supabase);
         
-        // Fetch tables list to check if 'Packages' table exists
-        const { data: tablesList, error: tablesError } = await supabase
-          .from('Packages')
+        // Attempting to fetch the Packages table
+        setDebugInfo(prev => prev + '\nAttempting to fetch from Packages table...');
+        
+        // Try lowercase first as this is often the standard in Supabase
+        const { data: lowercaseData, error: lowercaseError } = await supabase
+          .from('packages')
           .select('*');
           
-        console.log('Raw response from Packages table:', tablesList, tablesError);
-        
-        if (tablesError) {
-          console.error('Error fetching packages:', tablesError);
-          toast({
-            title: 'Error',
-            description: 'Could not load available packages. Please try again later.',
-            variant: 'destructive',
-          });
-        } else if (tablesList && tablesList.length > 0) {
-          console.log('Successfully fetched packages:', tablesList);
+        if (lowercaseError) {
+          setDebugInfo(prev => prev + `\nError with lowercase 'packages': ${lowercaseError.message}`);
           
-          // Transform the data to match PackageInfo type
-          const formattedPackages: PackageInfo[] = tablesList.map(pkg => ({
-            name: pkg.name || 'Unnamed Package',
-            package_id: pkg.package_id || 'NO_ID',
-            bottles: pkg.bottles || '',
-            sommeliers: pkg.sommeliers || '',
-            tastings: pkg.tastings || '',
-            hosts: pkg.hosts || ''
-          }));
-          
-          setAvailablePackages(formattedPackages);
-          
-          // Pre-fill with the first package ID if available
-          if (formattedPackages[0]?.package_id) {
-            setSessionId(formattedPackages[0].package_id);
+          // Try with uppercase if lowercase failed
+          const { data: uppercaseData, error: uppercaseError } = await supabase
+            .from('Packages')
+            .select('*');
+            
+          if (uppercaseError) {
+            setDebugInfo(prev => prev + `\nError with uppercase 'Packages': ${uppercaseError.message}`);
+            throw new Error(`Could not fetch packages data: ${uppercaseError.message}`);
+          } else {
+            setDebugInfo(prev => prev + `\nSuccessfully fetched ${uppercaseData?.length || 0} packages from 'Packages'`);
+            
+            if (uppercaseData && uppercaseData.length > 0) {
+              console.log('Raw packages data:', JSON.stringify(uppercaseData));
+              setDebugInfo(prev => prev + `\nRaw data: ${JSON.stringify(uppercaseData)}`);
+              
+              // Transform the data to match PackageInfo type
+              const formattedPackages: PackageInfo[] = uppercaseData.map(pkg => ({
+                name: pkg.name || 'Unnamed Package',
+                package_id: pkg.package_id || 'NO_ID',
+                bottles: pkg.bottles || '',
+                sommeliers: pkg.sommeliers || '',
+                tastings: pkg.tastings || '',
+                hosts: pkg.hosts || ''
+              }));
+              
+              setAvailablePackages(formattedPackages);
+              setSessionId(formattedPackages[0]?.package_id || '');
+            } else {
+              throw new Error('No packages found in database');
+            }
           }
         } else {
-          console.log('No packages found in database');
+          setDebugInfo(prev => prev + `\nSuccessfully fetched ${lowercaseData?.length || 0} packages from 'packages'`);
           
-          // Create demo packages since none were found
-          const demoPackages: PackageInfo[] = [
-            { 
-              name: 'Demo Wine Tasting', 
-              package_id: 'DEMO001',
-              bottles: 'Cabernet Sauvignon,Merlot,Pinot Noir',
-              sommeliers: 'Jane Smith',
-              tastings: 'Red Wine Basics',
-              hosts: 'Wine Club'
-            },
-            { 
-              name: 'Premium Wine Experience', 
-              package_id: 'DEMO002',
-              bottles: 'Chardonnay,Sauvignon Blanc,Riesling',
-              sommeliers: 'Robert Johnson',
-              tastings: 'White Wine Journey',
-              hosts: 'Vineyard Tours'
-            }
-          ];
-          
-          setAvailablePackages(demoPackages);
-          setSessionId(demoPackages[0].package_id);
-          
-          toast({
-            title: 'Demo Mode',
-            description: 'No packages found. Using demo packages for testing.',
-          });
+          if (lowercaseData && lowercaseData.length > 0) {
+            console.log('Raw packages data:', JSON.stringify(lowercaseData));
+            setDebugInfo(prev => prev + `\nRaw data: ${JSON.stringify(lowercaseData)}`);
+            
+            // Transform the data to match PackageInfo type
+            const formattedPackages: PackageInfo[] = lowercaseData.map(pkg => ({
+              name: pkg.name || 'Unnamed Package',
+              package_id: pkg.package_id || 'NO_ID',
+              bottles: pkg.bottles || '',
+              sommeliers: pkg.sommeliers || '',
+              tastings: pkg.tastings || '',
+              hosts: pkg.hosts || ''
+            }));
+            
+            setAvailablePackages(formattedPackages);
+            setSessionId(formattedPackages[0]?.package_id || '');
+          } else {
+            throw new Error('No packages found in database');
+          }
         }
-      } catch (err) {
-        console.error('Unexpected error in fetchAllPackageIds:', err);
+      } catch (err: any) {
+        console.error('Error in fetchAllPackageIds:', err);
+        setDebugInfo(prev => prev + `\nCaught error: ${err.message}`);
+        
         toast({
-          title: 'Error',
-          description: 'An unexpected error occurred. Using demo mode.',
+          title: 'Database Connection Issue',
+          description: 'Could not load packages. Using demo packages instead.',
           variant: 'destructive',
         });
         
-        // Provide fallback data for testing
-        const fallbackPackages: PackageInfo[] = [
+        // Provide demo packages for testing
+        const demoPackages: PackageInfo[] = [
           { 
-            name: 'Fallback Package', 
-            package_id: 'FALLBACK001',
-            bottles: 'Demo Wine 1,Demo Wine 2',
-            sommeliers: 'Demo Sommelier',
-            tastings: 'Demo Tasting',
-            hosts: 'Demo Host'
+            name: 'Demo Wine Tasting', 
+            package_id: 'DEMO001',
+            bottles: 'Cabernet Sauvignon,Merlot,Pinot Noir',
+            sommeliers: 'Jane Smith',
+            tastings: 'Red Wine Basics',
+            hosts: 'Wine Club'
           },
-          {
-            name: 'Emergency Backup Tasting',
-            package_id: 'FALLBACK002',
-            bottles: 'Emergency Wine 1,Emergency Wine 2',
-            sommeliers: 'Backup Sommelier',
-            tastings: 'Backup Tasting',
-            hosts: 'Backup Host'
+          { 
+            name: 'Premium Wine Experience', 
+            package_id: 'DEMO002',
+            bottles: 'Chardonnay,Sauvignon Blanc,Riesling',
+            sommeliers: 'Robert Johnson',
+            tastings: 'White Wine Journey',
+            hosts: 'Vineyard Tours'
           }
         ];
         
-        setAvailablePackages(fallbackPackages);
-        setSessionId(fallbackPackages[0].package_id);
+        setDebugInfo(prev => prev + '\nFalling back to demo packages');
+        setAvailablePackages(demoPackages);
+        setSessionId(demoPackages[0].package_id);
       } finally {
         setFetchingPackages(false);
       }
@@ -173,14 +178,12 @@ const SignInForm = () => {
       setLoading(true);
       
       try {
-        console.log('Using session ID:', sessionId);
         const trimmedSessionId = sessionId.trim();
         
         // Find the package in our available packages
         const selectedPackage = availablePackages.find(pkg => pkg.package_id === trimmedSessionId);
         
         if (!selectedPackage) {
-          console.log('No package found with ID:', trimmedSessionId);
           toast({
             title: 'Invalid Session Code',
             description: 'The session code you entered could not be found.',
@@ -189,8 +192,6 @@ const SignInForm = () => {
           setLoading(false);
           return;
         }
-        
-        console.log('Selected package:', selectedPackage);
         
         // Store package info in context
         setPackageInfo(selectedPackage);
@@ -223,6 +224,13 @@ const SignInForm = () => {
         <h2 className="text-2xl font-bold mb-6 text-center text-white">
           Join Wine Tasting Session
         </h2>
+        
+        {/* Debug info section */}
+        <div className="mb-4 p-2 bg-purple-800/40 rounded text-xs text-white overflow-auto max-h-32">
+          <p className="font-semibold mb-1">Database Connection Status:</p>
+          <pre className="whitespace-pre-wrap">{debugInfo || 'No debug info available yet'}</pre>
+        </div>
+        
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="sessionId" className="block text-sm font-medium text-white mb-1">
