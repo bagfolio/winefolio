@@ -1,12 +1,10 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
 import { ArrowLeft, ArrowRight, Wine } from 'lucide-react';
 import WineFaq from './WineFaq';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { useToast } from '@/components/ui/use-toast';
 
 interface MultipleChoiceQuestionProps {
   questionId: number;
@@ -17,12 +15,9 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({ questio
     wineTastingResponse, 
     setFruitFlavors, 
     nextQuestion, 
-    previousQuestion,
-    sessionId,
-    currentSession
+    previousQuestion 
   } = useWineTasting();
   
-  const { toast } = useToast();
   const question = questions.find(q => q.id === questionId);
   const bottleNumber = question?.bottleNumber || 1;
   const options = question?.options || [];
@@ -31,18 +26,13 @@ const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({ questio
     return wineTastingResponse[bottleNumber]?.fruitFlavors?.includes(option) || false;
   };
   
-  const toggleOption = async (option: string) => {
+  const toggleOption = (option: string) => {
     const currentFlavors = wineTastingResponse[bottleNumber]?.fruitFlavors || [];
-    let newFlavors;
-    
     if (isSelected(option)) {
-      newFlavors = currentFlavors.filter(item => item !== option);
+      setFruitFlavors(currentFlavors.filter(item => item !== option), bottleNumber);
     } else {
-      newFlavors = [...currentFlavors, option];
+      setFruitFlavors([...currentFlavors, option], bottleNumber);
     }
-    
-    // Update local state
-    setFruitFlavors(newFlavors, bottleNumber);
   };
 
   return (
