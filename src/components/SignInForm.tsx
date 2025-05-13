@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ const SignInForm = () => {
   const [email, setEmail] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [errors, setErrors] = useState({ name: '', email: '', sessionId: '' });
+  const [availablePackages, setAvailablePackages] = useState([]);
   const { toast } = useToast();
   
   // Debug function to fetch and log all package IDs on component mount
@@ -26,6 +28,12 @@ const SignInForm = () => {
           console.error('Error fetching package IDs:', error);
         } else if (data) {
           console.log('Available package IDs in database:', data);
+          setAvailablePackages(data);
+          
+          // If test data exists, pre-fill the session ID for easier testing
+          if (data.length > 0) {
+            setSessionId(data[0].package_id);
+          }
         }
       } catch (err) {
         console.error('Unexpected error fetching package IDs:', err);
@@ -115,6 +123,11 @@ const SignInForm = () => {
         
         // Proceed to next question
         nextQuestion();
+        
+        toast({
+          title: 'Success',
+          description: 'Session code validated successfully!',
+        });
       } catch (error) {
         console.error('Error in session validation:', error);
         toast({
@@ -147,6 +160,18 @@ const SignInForm = () => {
               placeholder="Enter session code"
             />
             {errors.sessionId && <p className="text-red-300 text-sm mt-1">{errors.sessionId}</p>}
+            {availablePackages.length > 0 && (
+              <div className="mt-2">
+                <p className="text-xs text-purple-300">Available test session codes:</p>
+                <ul className="text-xs text-purple-200 list-disc pl-5 mt-1">
+                  {availablePackages.map((pkg: any) => (
+                    <li key={pkg.package_id} className="cursor-pointer hover:text-white" onClick={() => setSessionId(pkg.package_id)}>
+                      {pkg.name}: <span className="font-mono">{pkg.package_id}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-white mb-1">
