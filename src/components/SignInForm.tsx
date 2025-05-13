@@ -51,12 +51,13 @@ const SignInForm = () => {
       
       try {
         console.log('Validating session ID:', sessionId);
+        const trimmedSessionId = sessionId.trim();
         
-        // Query the Packages table to find the package with the given session ID
+        // Query the Packages table with improved logging and error handling
         const { data: packageData, error: packageError } = await supabase
           .from('Packages')
           .select('*')
-          .eq('package_id', sessionId);
+          .eq('package_id', trimmedSessionId);
         
         console.log('Package query result:', packageData, packageError);
         
@@ -72,23 +73,38 @@ const SignInForm = () => {
         }
         
         if (!packageData || packageData.length === 0) {
-          console.error('No package found with ID:', sessionId);
-          toast({
-            title: 'Invalid Session Code',
-            description: 'The session code you entered could not be found.',
-            variant: 'destructive',
-          });
-          setLoading(false);
-          return;
+          // Try a case-insensitive search as a fallback
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('Packages')
+            .select('*')
+            .ilike('package_id', trimmedSessionId);
+            
+          console.log('Fallback package query result:', fallbackData, fallbackError);
+            
+          if (fallbackError || !fallbackData || fallbackData.length === 0) {
+            console.error('No package found with ID:', trimmedSessionId);
+            toast({
+              title: 'Invalid Session Code',
+              description: 'The session code you entered could not be found.',
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+          }
+          
+          // Use the fallback result
+          const foundPackage = fallbackData[0];
+          console.log('Found package using fallback search:', foundPackage);
+          setPackageInfo(foundPackage);
+        } else {
+          // Store package info in context
+          const foundPackage = packageData[0];
+          console.log('Found package:', foundPackage);
+          setPackageInfo(foundPackage);
         }
         
-        // Store package info in context
-        const foundPackage = packageData[0];
-        console.log('Found package:', foundPackage);
-        setPackageInfo(foundPackage);
-        
         // Store user info
-        setUserInfo({ name, email, sessionId });
+        setUserInfo({ name, email, sessionId: trimmedSessionId });
         
         // Proceed to next question
         nextQuestion();

@@ -19,7 +19,7 @@ export const useBottlesData = (packageInfo: PackageInfo | null) => {
       
       setLoading(true);
       try {
-        // Parse bottle IDs from the package
+        // Parse bottle names from the package
         const bottleNames = packageInfo.bottles.split(',').map(name => name.trim());
         console.log('Fetching bottles with names:', bottleNames);
         
@@ -50,16 +50,27 @@ export const useBottlesData = (packageInfo: PackageInfo | null) => {
         console.log('Fetched bottles:', bottles);
         
         if (!bottles || bottles.length === 0) {
-          console.log('No bottles found with the provided names');
-          toast({
-            title: 'Warning',
-            description: 'No wine bottle information found for this tasting session.',
-          });
-          setLoading(false);
-          return;
+          console.log('No bottles found with the provided names:', bottleNames);
+          // If no bottles are found using direct matching, try using ILIKE for case-insensitive matching
+          const { data: fallbackBottles, error: fallbackError } = await supabase
+            .from('Bottles')
+            .select('*')
+            .or(bottleNames.map(name => `Name.ilike.${name}`).join(','));
+            
+          if (fallbackError || !fallbackBottles || fallbackBottles.length === 0) {
+            toast({
+              title: 'Warning',
+              description: 'No wine bottle information found for this tasting session.',
+            });
+            setLoading(false);
+            return;
+          }
+          
+          console.log('Found bottles using fallback search:', fallbackBottles);
+          setBottlesData(fallbackBottles);
+        } else {
+          setBottlesData(bottles);
         }
-        
-        setBottlesData(bottles);
       } catch (error) {
         console.error('Error in fetchBottlesData:', error);
         toast({
