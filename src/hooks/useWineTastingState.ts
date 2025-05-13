@@ -2,13 +2,12 @@
 import { useState } from 'react';
 import { UserInfo, WineTastingResponse, PackageInfo } from '../types';
 import { BottleData } from '../context/types';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 export const useWineTastingState = (bottlesData: BottleData[]) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [packageInfo, setPackageInfo] = useState<PackageInfo | null>(null);
-  const { toast } = useToast();
   
   // Initialize responses for multiple bottles
   const [wineTastingResponse, setWineTastingResponse] = useState<{
@@ -43,10 +42,9 @@ export const useWineTastingState = (bottlesData: BottleData[]) => {
     // In a real app, this would send data to a backend API
     console.log('Submitting responses:', { userInfo, packageInfo, wineTastingResponse, bottlesData });
     
-    // Show success toast
-    toast({
-      title: "Responses submitted!",
-      description: "Your wine tasting responses have been saved.",
+    // Show success toast using sonner format
+    toast('Responses submitted!', {
+      description: "Your wine tasting responses have been saved."
     });
   };
 
