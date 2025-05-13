@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,70 +34,39 @@ const SignInForm = () => {
         // Log Supabase client details (without exposing sensitive information)
         console.log('Supabase client initialized:', !!supabase);
         
-        // Attempting to fetch the Packages table
+        // Attempting to fetch the Packages table with correct capitalization
         setDebugInfo(prev => prev + '\nAttempting to fetch from Packages table...');
         
-        // Try lowercase first as this is often the standard in Supabase
-        const { data: lowercaseData, error: lowercaseError } = await supabase
-          .from('packages')
+        const { data: packagesData, error: packagesError } = await supabase
+          .from('Packages')
           .select('*');
           
-        if (lowercaseError) {
-          setDebugInfo(prev => prev + `\nError with lowercase 'packages': ${lowercaseError.message}`);
+        if (packagesError) {
+          setDebugInfo(prev => prev + `\nError with 'Packages': ${packagesError.message}`);
+          throw new Error(`Could not fetch packages data: ${packagesError.message}`);
+        }
+        
+        setDebugInfo(prev => prev + `\nSuccessfully fetched ${packagesData?.length || 0} packages from 'Packages'`);
+        
+        if (packagesData && packagesData.length > 0) {
+          console.log('Raw packages data:', JSON.stringify(packagesData));
+          setDebugInfo(prev => prev + `\nRaw data: ${JSON.stringify(packagesData)}`);
           
-          // Try with uppercase if lowercase failed
-          const { data: uppercaseData, error: uppercaseError } = await supabase
-            .from('Packages')
-            .select('*');
-            
-          if (uppercaseError) {
-            setDebugInfo(prev => prev + `\nError with uppercase 'Packages': ${uppercaseError.message}`);
-            throw new Error(`Could not fetch packages data: ${uppercaseError.message}`);
-          } else {
-            setDebugInfo(prev => prev + `\nSuccessfully fetched ${uppercaseData?.length || 0} packages from 'Packages'`);
-            
-            if (uppercaseData && uppercaseData.length > 0) {
-              console.log('Raw packages data:', JSON.stringify(uppercaseData));
-              setDebugInfo(prev => prev + `\nRaw data: ${JSON.stringify(uppercaseData)}`);
-              
-              // Transform the data to match PackageInfo type
-              const formattedPackages: PackageInfo[] = uppercaseData.map(pkg => ({
-                name: pkg.name || 'Unnamed Package',
-                package_id: pkg.package_id || 'NO_ID',
-                bottles: pkg.bottles || '',
-                sommeliers: pkg.sommeliers || '',
-                tastings: pkg.tastings || '',
-                hosts: pkg.hosts || ''
-              }));
-              
-              setAvailablePackages(formattedPackages);
-              setSessionId(formattedPackages[0]?.package_id || '');
-            } else {
-              throw new Error('No packages found in database');
-            }
-          }
+          // Transform the data to match PackageInfo type
+          // Making sure we use the correct property names from the database
+          const formattedPackages: PackageInfo[] = packagesData.map(pkg => ({
+            name: pkg.name || 'Unnamed Package',
+            package_id: pkg.package_id || 'NO_ID',
+            bottles: pkg.bottles || '',
+            sommeliers: pkg.sommeliers || '',
+            tastings: pkg.tastings || '',
+            hosts: pkg.hosts || ''
+          }));
+          
+          setAvailablePackages(formattedPackages);
+          setSessionId(formattedPackages[0]?.package_id || '');
         } else {
-          setDebugInfo(prev => prev + `\nSuccessfully fetched ${lowercaseData?.length || 0} packages from 'packages'`);
-          
-          if (lowercaseData && lowercaseData.length > 0) {
-            console.log('Raw packages data:', JSON.stringify(lowercaseData));
-            setDebugInfo(prev => prev + `\nRaw data: ${JSON.stringify(lowercaseData)}`);
-            
-            // Transform the data to match PackageInfo type
-            const formattedPackages: PackageInfo[] = lowercaseData.map(pkg => ({
-              name: pkg.name || 'Unnamed Package',
-              package_id: pkg.package_id || 'NO_ID',
-              bottles: pkg.bottles || '',
-              sommeliers: pkg.sommeliers || '',
-              tastings: pkg.tastings || '',
-              hosts: pkg.hosts || ''
-            }));
-            
-            setAvailablePackages(formattedPackages);
-            setSessionId(formattedPackages[0]?.package_id || '');
-          } else {
-            throw new Error('No packages found in database');
-          }
+          throw new Error('No packages found in database');
         }
       } catch (err: any) {
         console.error('Error in fetchAllPackageIds:', err);
