@@ -50,14 +50,29 @@ const SignInForm = () => {
       setLoading(true);
       
       try {
+        console.log('Validating session ID:', sessionId);
+        
         // Query the Packages table to find the package with the given session ID
         const { data: packageData, error: packageError } = await supabase
           .from('Packages')
           .select('*')
           .eq('package_id', sessionId);
         
-        if (packageError || !packageData || packageData.length === 0) {
-          console.error('Error fetching package:', packageError || 'No package found');
+        console.log('Package query result:', packageData, packageError);
+        
+        if (packageError) {
+          console.error('Error fetching package:', packageError);
+          toast({
+            title: 'Error',
+            description: 'An error occurred while validating the session code.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+        
+        if (!packageData || packageData.length === 0) {
+          console.error('No package found with ID:', sessionId);
           toast({
             title: 'Invalid Session Code',
             description: 'The session code you entered could not be found.',
@@ -84,7 +99,6 @@ const SignInForm = () => {
           description: 'An unexpected error occurred. Please try again.',
           variant: 'destructive',
         });
-      } finally {
         setLoading(false);
       }
     }

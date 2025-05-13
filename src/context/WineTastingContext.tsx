@@ -49,36 +49,25 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
   // Initialize responses for multiple bottles
   const [wineTastingResponse, setWineTastingResponse] = useState<{
     [bottleNumber: number]: WineTastingResponse;
-  }>({
-    1: {
-      initialThoughts: '',
-      rating: 5,
-      fruitFlavors: [],
-      acidityRating: 5,
-      additionalThoughts: '',
-    },
-    2: {
-      initialThoughts: '',
-      rating: 5,
-      fruitFlavors: [],
-      acidityRating: 5,
-      additionalThoughts: '',
-    }
-  });
+  }>({});
 
   // Load bottles data when package info changes
   useEffect(() => {
     const fetchBottlesData = async () => {
-      if (!packageInfo || !packageInfo.bottles) return;
+      if (!packageInfo || !packageInfo.bottles) {
+        console.log('No package info or bottles available');
+        return;
+      }
       
       setLoading(true);
       try {
         // Parse bottle IDs from the package
-        const bottleIds = packageInfo.bottles.split(',').map(id => id.trim());
-        console.log('Fetching bottles with IDs:', bottleIds);
+        const bottleNames = packageInfo.bottles.split(',').map(name => name.trim());
+        console.log('Fetching bottles with names:', bottleNames);
         
-        if (bottleIds.length === 0) {
-          console.log('No bottle IDs found in package');
+        if (bottleNames.length === 0) {
+          console.log('No bottle names found in package');
+          setLoading(false);
           return;
         }
         
@@ -86,7 +75,7 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
         const { data: bottles, error } = await supabase
           .from('Bottles')
           .select('*')
-          .in('Name', bottleIds)
+          .in('Name', bottleNames)
           .order('sequence', { ascending: true });
         
         if (error) {
@@ -96,15 +85,27 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
             description: 'Failed to load bottle information.',
             variant: 'destructive',
           });
+          setLoading(false);
           return;
         }
         
         console.log('Fetched bottles:', bottles);
-        setBottlesData(bottles || []);
+        
+        if (!bottles || bottles.length === 0) {
+          console.log('No bottles found with the provided names');
+          toast({
+            title: 'Warning',
+            description: 'No wine bottle information found for this tasting session.',
+          });
+          setLoading(false);
+          return;
+        }
+        
+        setBottlesData(bottles);
         
         // Initialize tasting responses for all bottles
         const initialResponses: { [bottleNumber: number]: WineTastingResponse } = {};
-        bottles?.forEach((bottle, index) => {
+        bottles.forEach((bottle, index) => {
           initialResponses[index + 1] = {
             initialThoughts: '',
             rating: 5,
@@ -114,12 +115,14 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
           };
         });
         
-        // Only set if we have bottles to avoid wiping out existing responses
-        if (Object.keys(initialResponses).length > 0) {
-          setWineTastingResponse(initialResponses);
-        }
+        setWineTastingResponse(initialResponses);
       } catch (error) {
         console.error('Error in fetchBottlesData:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load tasting information.',
+          variant: 'destructive',
+        });
       } finally {
         setLoading(false);
       }
