@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,39 +19,52 @@ const SignInForm = () => {
   const [sessionId, setSessionId] = useState('');
   const [errors, setErrors] = useState({ name: '', email: '', sessionId: '' });
   const [availablePackages, setAvailablePackages] = useState([]);
+  const [fetchingPackages, setFetchingPackages] = useState(true);
   const { toast } = useToast();
   
   // Fetch all package IDs on component mount
   useEffect(() => {
     const fetchAllPackageIds = async () => {
       try {
-        // Clear logging so we can see what's happening
+        setFetchingPackages(true);
         console.log('Fetching package data from Supabase...');
         
+        // Test with direct query to debug
         const { data, error } = await supabase
           .from('Packages')
-          .select('package_id, name')
-          .order('name');
+          .select('*');
           
+        console.log('Raw response from packages table:', data, error);
+        
         if (error) {
-          console.error('Error fetching package IDs:', error);
-        } else if (data) {
-          console.log('Available package IDs in database:', data);
+          console.error('Error fetching packages:', error);
+          toast({
+            title: 'Error',
+            description: 'Could not load available packages. Please try again later.',
+            variant: 'destructive',
+          });
+        } else if (data && data.length > 0) {
+          console.log('Successfully fetched packages:', data);
           setAvailablePackages(data);
           
-          // If packages exist, pre-fill the session ID for easier testing
-          if (data.length > 0) {
+          // Pre-fill with the first package ID if available
+          if (data[0]?.package_id) {
             setSessionId(data[0].package_id);
           }
+        } else {
+          console.log('No packages found in database');
+          // Keep availablePackages as empty array
         }
       } catch (err) {
-        console.error('Unexpected error fetching package IDs:', err);
+        console.error('Unexpected error in fetchAllPackageIds:', err);
+      } finally {
+        setFetchingPackages(false);
       }
     };
     
     // Immediately call the function
     fetchAllPackageIds();
-  }, []);
+  }, [toast]);
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -168,20 +180,24 @@ const SignInForm = () => {
               <SelectTrigger className="bg-purple-800/30 border-purple-700 text-white">
                 <SelectValue placeholder="Select a session code" />
               </SelectTrigger>
-              <SelectContent className="bg-purple-900 border-purple-700 text-white">
-                {availablePackages.length > 0 ? (
+              <SelectContent className="bg-purple-900 border-purple-700 text-white z-50">
+                {fetchingPackages ? (
+                  <SelectItem value="loading" disabled className="text-purple-300">
+                    Loading packages...
+                  </SelectItem>
+                ) : availablePackages.length > 0 ? (
                   availablePackages.map((pkg: any) => (
                     <SelectItem 
                       key={pkg.package_id} 
-                      value={pkg.package_id}
+                      value={pkg.package_id || ""}
                       className="hover:bg-purple-800 focus:bg-purple-800 text-white"
                     >
-                      {pkg.name} ({pkg.package_id})
+                      {pkg.name || "Unnamed Package"} ({pkg.package_id || "No ID"})
                     </SelectItem>
                   ))
                 ) : (
-                  <SelectItem value="loading" disabled className="text-purple-300">
-                    Loading packages...
+                  <SelectItem value="none" disabled className="text-purple-300">
+                    No packages available
                   </SelectItem>
                 )}
               </SelectContent>
