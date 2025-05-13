@@ -31,25 +31,28 @@ const SignInForm = () => {
         setFetchingPackages(true);
         console.log('Fetching package data from Supabase...');
         
-        // Use correct capitalization for Packages table
-        const { data, error } = await supabase
+        // Get Supabase URL for debugging
+        console.log('Supabase URL:', process.env.SUPABASE_URL || 'Not available in env');
+        
+        // Fetch tables list to check if 'Packages' table exists
+        const { data: tablesList, error: tablesError } = await supabase
           .from('Packages')
           .select('*');
           
-        console.log('Raw response from Packages table:', data, error);
+        console.log('Raw response from Packages table:', tablesList, tablesError);
         
-        if (error) {
-          console.error('Error fetching packages:', error);
+        if (tablesError) {
+          console.error('Error fetching packages:', tablesError);
           toast({
             title: 'Error',
             description: 'Could not load available packages. Please try again later.',
             variant: 'destructive',
           });
-        } else if (data && data.length > 0) {
-          console.log('Successfully fetched packages:', data);
+        } else if (tablesList && tablesList.length > 0) {
+          console.log('Successfully fetched packages:', tablesList);
           
           // Transform the data to match PackageInfo type
-          const formattedPackages: PackageInfo[] = data.map(pkg => ({
+          const formattedPackages: PackageInfo[] = tablesList.map(pkg => ({
             name: pkg.name || 'Unnamed Package',
             package_id: pkg.package_id || 'NO_ID',
             bottles: pkg.bottles || '',
@@ -67,8 +70,8 @@ const SignInForm = () => {
         } else {
           console.log('No packages found in database');
           
-          // Add a dummy package for testing if none are found
-          const dummyPackages: PackageInfo[] = [
+          // Create demo packages since none were found
+          const demoPackages: PackageInfo[] = [
             { 
               name: 'Demo Wine Tasting', 
               package_id: 'DEMO001',
@@ -76,15 +79,23 @@ const SignInForm = () => {
               sommeliers: 'Jane Smith',
               tastings: 'Red Wine Basics',
               hosts: 'Wine Club'
+            },
+            { 
+              name: 'Premium Wine Experience', 
+              package_id: 'DEMO002',
+              bottles: 'Chardonnay,Sauvignon Blanc,Riesling',
+              sommeliers: 'Robert Johnson',
+              tastings: 'White Wine Journey',
+              hosts: 'Vineyard Tours'
             }
           ];
           
-          setAvailablePackages(dummyPackages);
-          setSessionId(dummyPackages[0].package_id);
+          setAvailablePackages(demoPackages);
+          setSessionId(demoPackages[0].package_id);
           
           toast({
             title: 'Demo Mode',
-            description: 'No packages found. Using demo package for testing.',
+            description: 'No packages found. Using demo packages for testing.',
           });
         }
       } catch (err) {
@@ -96,17 +107,27 @@ const SignInForm = () => {
         });
         
         // Provide fallback data for testing
-        const fallbackPackage: PackageInfo = { 
-          name: 'Fallback Package', 
-          package_id: 'FALLBACK001',
-          bottles: 'Demo Wine 1,Demo Wine 2',
-          sommeliers: 'Demo Sommelier',
-          tastings: 'Demo Tasting',
-          hosts: 'Demo Host'
-        };
+        const fallbackPackages: PackageInfo[] = [
+          { 
+            name: 'Fallback Package', 
+            package_id: 'FALLBACK001',
+            bottles: 'Demo Wine 1,Demo Wine 2',
+            sommeliers: 'Demo Sommelier',
+            tastings: 'Demo Tasting',
+            hosts: 'Demo Host'
+          },
+          {
+            name: 'Emergency Backup Tasting',
+            package_id: 'FALLBACK002',
+            bottles: 'Emergency Wine 1,Emergency Wine 2',
+            sommeliers: 'Backup Sommelier',
+            tastings: 'Backup Tasting',
+            hosts: 'Backup Host'
+          }
+        ];
         
-        setAvailablePackages([fallbackPackage]);
-        setSessionId(fallbackPackage.package_id);
+        setAvailablePackages(fallbackPackages);
+        setSessionId(fallbackPackages[0].package_id);
       } finally {
         setFetchingPackages(false);
       }
@@ -152,76 +173,27 @@ const SignInForm = () => {
       setLoading(true);
       
       try {
-        console.log('Validating session ID:', sessionId);
+        console.log('Using session ID:', sessionId);
         const trimmedSessionId = sessionId.trim();
         
-        // Try to look for the package in the database
-        console.log('Looking for package with ID:', trimmedSessionId);
+        // Find the package in our available packages
+        const selectedPackage = availablePackages.find(pkg => pkg.package_id === trimmedSessionId);
         
-        // Use correct case for table name in query
-        const { data: packageData, error: packageError } = await supabase
-          .from('Packages')
-          .select()
-          .eq('package_id', trimmedSessionId)
-          .maybeSingle();
-        
-        console.log('Package query result:', packageData, packageError);
-        
-        if (packageError) {
-          console.error('Error fetching package:', packageError);
+        if (!selectedPackage) {
+          console.log('No package found with ID:', trimmedSessionId);
           toast({
-            title: 'Error',
-            description: 'An error occurred while validating the session code.',
+            title: 'Invalid Session Code',
+            description: 'The session code you entered could not be found.',
             variant: 'destructive',
           });
           setLoading(false);
           return;
         }
         
-        // If no package found, check if it's one of our fallback/demo packages
-        let finalPackage: PackageInfo | null = null;
+        console.log('Selected package:', selectedPackage);
         
-        if (packageData) {
-          // Convert database result to PackageInfo type
-          finalPackage = {
-            name: packageData.name || 'Unknown Package',
-            package_id: packageData.package_id || '',
-            bottles: packageData.bottles || '',
-            sommeliers: packageData.sommeliers || '',
-            tastings: packageData.tastings || '',
-            hosts: packageData.hosts || ''
-          };
-        } else {
-          console.log('No package found in database, checking local packages');
-          const localPackage = availablePackages.find(pkg => pkg.package_id === trimmedSessionId);
-          
-          if (!localPackage) {
-            console.log('No package found with ID:', trimmedSessionId);
-            toast({
-              title: 'Invalid Session Code',
-              description: 'The session code you entered could not be found.',
-              variant: 'destructive',
-            });
-            setLoading(false);
-            return;
-          }
-          
-          console.log('Found package in local cache:', localPackage);
-          finalPackage = localPackage;
-        }
-        
-        if (!finalPackage) {
-          toast({
-            title: 'Error',
-            description: 'Could not find a valid package.',
-            variant: 'destructive',
-          });
-          setLoading(false);
-          return;
-        }
-        
-        // We found a package, store it in context
-        setPackageInfo(finalPackage);
+        // Store package info in context
+        setPackageInfo(selectedPackage);
         
         // Store user info
         setUserInfo({ name, email, sessionId: trimmedSessionId });
