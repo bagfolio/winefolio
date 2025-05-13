@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,41 +22,33 @@ const SignInForm = () => {
   const [errors, setErrors] = useState({ name: '', email: '', sessionId: '' });
   const [availablePackages, setAvailablePackages] = useState<PackageInfo[]>([]);
   const [fetchingPackages, setFetchingPackages] = useState(true);
-  const [debugInfo, setDebugInfo] = useState<string>('');
+  const [connectionStatus, setConnectionStatus] = useState<string>('Initializing...');
   const { toast } = useToast();
   
-  // Fetch all package IDs on component mount
   useEffect(() => {
-    const fetchAllPackageIds = async () => {
+    const fetchPackages = async () => {
       try {
         setFetchingPackages(true);
-        setDebugInfo('Starting to fetch package data from Supabase...');
+        setConnectionStatus('Starting to fetch package data from Supabase...');
         
-        // Log Supabase client details (without exposing sensitive information)
-        console.log('Supabase client initialized:', !!supabase);
+        // Try fetching from the Packages table
+        setConnectionStatus(prev => `${prev}\nAttempting to query the "Packages" table...`);
         
-        // Try fetching from the "Packages" table directly
-        setDebugInfo(prev => prev + '\nAttempting direct query on "Packages" table...');
-        
-        // Try to get the database schema information using a direct query
-        const { data: schemaData, error: schemaError } = await supabase
+        const { data, error } = await supabase
           .from('Packages')
           .select('*');
           
-        if (schemaError) {
-          setDebugInfo(prev => prev + `\nError with 'Packages': ${schemaError.message}`);
-          throw new Error(`Could not fetch packages data: ${schemaError.message}`);
+        if (error) {
+          throw new Error(`Error fetching packages: ${error.message}`);
         }
         
-        setDebugInfo(prev => prev + `\nSuccessfully fetched ${schemaData?.length || 0} packages from 'Packages'`);
-        console.log('Raw packages response:', schemaData);
+        setConnectionStatus(prev => `${prev}\nSuccessfully connected to Supabase!`);
+        console.log('Raw packages data:', data);
         
-        if (schemaData && schemaData.length > 0) {
-          setDebugInfo(prev => prev + `\nRaw data: ${JSON.stringify(schemaData)}`);
+        if (data && data.length > 0) {
+          setConnectionStatus(prev => `${prev}\nFound ${data.length} packages in the database.`);
           
-          // Transform the data to match PackageInfo type
-          // Explicitly type the map function parameter to ensure type safety
-          const formattedPackages: PackageInfo[] = schemaData.map((pkg: any) => ({
+          const formattedPackages: PackageInfo[] = data.map((pkg) => ({
             name: pkg.name || 'Unnamed Package',
             package_id: pkg.package_id || 'NO_ID',
             bottles: pkg.bottles || '',
@@ -65,13 +58,21 @@ const SignInForm = () => {
           }));
           
           setAvailablePackages(formattedPackages);
-          setSessionId(formattedPackages[0]?.package_id || '');
+          if (!sessionId && formattedPackages.length > 0) {
+            setSessionId(formattedPackages[0].package_id);
+          }
+          
+          toast({
+            title: 'Connection Successful',
+            description: `Found ${data.length} wine tasting packages.`,
+          });
         } else {
-          throw new Error('No packages found in database');
+          setConnectionStatus(prev => `${prev}\nNo packages found in database. Database is connected but empty.`);
+          throw new Error('No packages found in database or database is empty');
         }
       } catch (err: any) {
-        console.error('Error in fetchAllPackageIds:', err);
-        setDebugInfo(prev => prev + `\nCaught error: ${err.message}`);
+        console.error('Error in fetchPackages:', err);
+        setConnectionStatus(prev => `${prev}\nError encountered: ${err.message}`);
         
         toast({
           title: 'Database Connection Issue',
@@ -99,17 +100,18 @@ const SignInForm = () => {
           }
         ];
         
-        setDebugInfo(prev => prev + '\nFalling back to demo packages');
+        setConnectionStatus(prev => `${prev}\nFalling back to demo packages`);
         setAvailablePackages(demoPackages);
-        setSessionId(demoPackages[0].package_id);
+        if (!sessionId) {
+          setSessionId(demoPackages[0].package_id);
+        }
       } finally {
         setFetchingPackages(false);
       }
     };
     
-    // Immediately call the function
-    fetchAllPackageIds();
-  }, [toast]);
+    fetchPackages();
+  }, [toast, sessionId]);
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -194,10 +196,10 @@ const SignInForm = () => {
           Join Wine Tasting Session
         </h2>
         
-        {/* Debug info section */}
+        {/* Connection status section */}
         <div className="mb-4 p-2 bg-purple-800/40 rounded text-xs text-white overflow-auto max-h-60">
           <p className="font-semibold mb-1">Database Connection Status:</p>
-          <pre className="whitespace-pre-wrap">{debugInfo || 'No debug info available yet'}</pre>
+          <pre className="whitespace-pre-wrap">{connectionStatus}</pre>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -221,10 +223,10 @@ const SignInForm = () => {
                   availablePackages.map((pkg) => (
                     <SelectItem 
                       key={pkg.package_id} 
-                      value={pkg.package_id || ""}
+                      value={pkg.package_id}
                       className="hover:bg-purple-800 focus:bg-purple-800 text-white"
                     >
-                      {pkg.name || "Unnamed Package"} ({pkg.package_id || "No ID"})
+                      {pkg.name} ({pkg.package_id})
                     </SelectItem>
                   ))
                 ) : (
