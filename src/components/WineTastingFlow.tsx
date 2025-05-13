@@ -15,7 +15,8 @@ const WineTastingFlow = () => {
     loading: contextLoading, 
     setLoading,
     setBottlesData,
-    packageInfo 
+    packageInfo,
+    userInfo
   } = useWineTasting();
   
   const [initialLoadAttempted, setInitialLoadAttempted] = useState(false);
@@ -24,22 +25,25 @@ const WineTastingFlow = () => {
   useEffect(() => {
     console.log('🚀 WineTastingFlow initialized');
     console.log('📦 Package info:', packageInfo ? JSON.stringify(packageInfo, null, 2) : 'None');
+    console.log('👤 User info:', userInfo ? JSON.stringify(userInfo, null, 2) : 'None');
     
     // Add a debugging interval
     const debugInterval = setInterval(() => {
       console.log('⏱️ Loading status check:');
       console.log(`  - Context loading: ${contextLoading ? 'YES' : 'NO'}`);
       console.log(`  - Initial load attempted: ${initialLoadAttempted ? 'YES' : 'NO'}`);
+      console.log(`  - Current question index: ${currentQuestionIndex}`);
+      console.log(`  - User info exists: ${userInfo ? 'YES' : 'NO'}`);
     }, 5000);
     
     return () => clearInterval(debugInterval);
-  }, [packageInfo, contextLoading, initialLoadAttempted]);
+  }, [packageInfo, contextLoading, initialLoadAttempted, currentQuestionIndex, userInfo]);
   
-  // Use custom hooks to manage bottle data and questions
+  // Only fetch bottles if we already have package info (user is logged in)
   const { 
     bottlesData, 
     loading: bottlesLoading 
-  } = usePackageBottles(packageInfo);
+  } = usePackageBottles(userInfo ? packageInfo : null);
   
   const { 
     dynamicQuestions, 
@@ -78,23 +82,6 @@ const WineTastingFlow = () => {
     }
   }, [bottlesData, setBottlesData, bottlesLoading, packageInfo]);
   
-  // Log questions data for debugging
-  useEffect(() => {
-    console.log(`📝 Questions updated - ${dynamicQuestions.length} questions`);
-    
-    if (dynamicQuestions.length > 0) {
-      console.log('📋 Question types breakdown:');
-      const types = dynamicQuestions.reduce((acc: Record<string, number>, q) => {
-        acc[q.type] = (acc[q.type] || 0) + 1;
-        return acc;
-      }, {});
-      
-      Object.entries(types).forEach(([type, count]) => {
-        console.log(`  - ${type}: ${count}`);
-      });
-    }
-  }, [dynamicQuestions]);
-  
   // Add a timer to automatically hide the loading screen after 15 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -109,11 +96,21 @@ const WineTastingFlow = () => {
     return () => clearTimeout(timer);
   }, [contextLoading, bottlesLoading, questionsLoading, setLoading]);
   
+  // Force the first question (sign-in) if currentQuestionIndex is 0
+  useEffect(() => {
+    if (currentQuestionIndex === 0) {
+      console.log('🔐 Ensuring sign-in screen is shown first');
+      // This ensures signin form is always rendered first
+      setInitialLoadAttempted(true);
+    }
+  }, [currentQuestionIndex]);
+  
   // Show loading screen if any data is being loaded and we haven't tried loading yet
   const isLoading = (contextLoading || bottlesLoading || questionsLoading) && !initialLoadAttempted;
   
   // If loading takes too long but we have no data and we've already attempted to load
-  const noDataAfterLoading = bottlesData.length === 0 && initialLoadAttempted && !isLoading;
+  // Only show error screen if we're past the login step (currentQuestionIndex > 0)
+  const noDataAfterLoading = bottlesData.length === 0 && initialLoadAttempted && !isLoading && currentQuestionIndex > 0 && packageInfo;
   
   // Log the current application state
   useEffect(() => {
@@ -127,6 +124,24 @@ const WineTastingFlow = () => {
   if (isLoading) {
     console.log('⏳ Showing loading screen...');
     return <LoadingScreen />;
+  }
+  
+  // Check if we should show sign in screen
+  if (currentQuestionIndex === 0) {
+    console.log('👋 Showing sign in screen');
+    // Always use the first question (should be signin) when index is 0
+    return (
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-grow flex items-center justify-center">
+          <QuestionRenderer question={{
+            id: 1,
+            type: 'signin',
+            question: 'Welcome to the Wine Tasting Experience',
+            description: 'Please sign in to get started'
+          }} />
+        </main>
+      </div>
+    );
   }
   
   if (noDataAfterLoading) {

@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useWineTasting } from '@/context/WineTastingContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
@@ -150,6 +149,7 @@ const SignInForm = () => {
       
       try {
         const trimmedSessionId = sessionId.trim();
+        console.log('Submitting session with ID:', trimmedSessionId);
         
         // Find the package in our available packages
         const selectedPackage = availablePackages.find(pkg => pkg.package_id === trimmedSessionId);
@@ -164,13 +164,18 @@ const SignInForm = () => {
           return;
         }
         
+        console.log('Selected package:', selectedPackage);
+        
         // Store package info in context
         setPackageInfo(selectedPackage);
         
         // Store user info
-        setUserInfo({ name, email, sessionId: trimmedSessionId });
+        const userData = { name, email, sessionId: trimmedSessionId };
+        console.log('Setting user info:', userData);
+        setUserInfo(userData);
         
         // Proceed to next question
+        console.log('Moving to next question');
         nextQuestion();
         
         toast({

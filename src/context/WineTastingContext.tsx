@@ -47,6 +47,15 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
     }
   }, [bottlesData]);
 
+  // Log key state changes
+  useEffect(() => {
+    console.log('📊 WineTastingContext state update:');
+    console.log(`  - Current question index: ${currentQuestionIndex}`);
+    console.log(`  - User info: ${userInfo ? 'Present' : 'Missing'}`);
+    console.log(`  - Package info: ${packageInfo ? 'Present' : 'Missing'}`);
+    console.log(`  - Bottles data: ${bottlesData.length} bottles`);
+  }, [currentQuestionIndex, userInfo, packageInfo, bottlesData.length]);
+
   const value: WineTastingContextType = {
     currentQuestionIndex,
     userInfo,
@@ -57,7 +66,7 @@ export const WineTastingProvider: React.FC<{ children: ReactNode }> = ({ childre
     setLoading,
     setUserInfo: (info: UserInfo) => setUserInfo(info),
     setPackageInfo: (info: PackageInfo) => setPackageInfo(info),
-    setBottlesData, // Added this line
+    setBottlesData, 
     setInitialThoughts,
     setRating,
     setFruitFlavors,
