@@ -36,8 +36,8 @@ export const usePackageBottles = (packageInfo: PackageInfo | null) => {
 
       // Fetch all bottles first to debug
       console.log('🔍 Fetching all bottles from database...');
-      const { data: allBottles, error: allBottlesError } = await supabase
-        .from('Bottles')
+      const { data: allBottles, error: allBottlesError } = await (supabase as any)
+        .from('bottles')
         .select('*');
         
       if (allBottlesError) {
@@ -48,22 +48,16 @@ export const usePackageBottles = (packageInfo: PackageInfo | null) => {
         return { success: false, error: `Database error: ${allBottlesError.message}` };
       } else {
         console.log(`✅ Successfully fetched ${allBottles?.length || 0} bottles from database`);
-        console.log('🍾 Available bottles:', allBottles?.map(b => b.Name));
+        console.log('🍾 Available bottles:', allBottles?.map(b => b.name || b.Name));
       }
 
       // Case insensitive matching for bottles
       console.log('🔍 Filtering bottles by name (case-insensitive)...');
-      const matchedBottles = allBottles?.filter(bottle => 
+      const matchedBottles = allBottles?.filter(bottle =>
         bottleNames.some(name => {
-          // Convert both to lowercase for case-insensitive matching
-          const bottleName = (bottle.Name || '').toLowerCase();
+          const bottleName = ((bottle.name || bottle.Name) || '').toLowerCase();
           const searchName = name.toLowerCase();
-          const match = bottleName === searchName || bottleName.includes(searchName);
-          
-          if (match) {
-            console.log(`✅ Found match for "${name}": ${bottle.Name}`);
-          }
-          return match;
+          return bottleName === searchName || bottleName.includes(searchName);
         })
       );
       
@@ -71,7 +65,7 @@ export const usePackageBottles = (packageInfo: PackageInfo | null) => {
       
       if (!matchedBottles || matchedBottles.length === 0) {
         console.warn('⚠️ No matching bottles found in database after filtering');
-        console.log('🍾 Available bottles in DB:', allBottles?.map(b => b.Name));
+        console.log('🍾 Available bottles in DB:', allBottles?.map(b => b.name || b.Name));
         console.log('🔍 Looking for these bottle names:', bottleNames);
         toast.warning('No matching bottles found for this tasting');
         
@@ -79,7 +73,7 @@ export const usePackageBottles = (packageInfo: PackageInfo | null) => {
         if (allBottles && allBottles.length > 0) {
           console.log('⚠️ Using fallback bottles for development');
           const fallbackBottles = allBottles.slice(0, Math.min(3, allBottles.length)); 
-          console.log('🍷 Fallback bottles:', fallbackBottles.map(b => b.Name));
+          console.log('🍷 Fallback bottles:', fallbackBottles.map(b => b.name || b.Name));
           const result = processFinalBottles(fallbackBottles, bottleNames);
           return { success: true, bottles: result, fallback: true };
         } else {
@@ -89,7 +83,8 @@ export const usePackageBottles = (packageInfo: PackageInfo | null) => {
         }
       }
       
-      console.log('✅ Successfully matched bottles:', matchedBottles.map(b => b.Name));
+      console.log('✅ Successfully matched bottles:', matchedBottles.map(b => b.name || b.Name));
+      console.log('Matched bottles:', matchedBottles);
       const result = processFinalBottles(matchedBottles, bottleNames);
       return { success: true, bottles: result };
       
@@ -122,10 +117,10 @@ export const usePackageBottles = (packageInfo: PackageInfo | null) => {
       
       // Otherwise sort by the order they appear in the package bottles string
       const aIndex = bottleNames.findIndex(name => 
-        (a.Name || '').toLowerCase().includes(name.toLowerCase())
+        (a.name || '').toLowerCase().includes(name.toLowerCase())
       );
       const bIndex = bottleNames.findIndex(name => 
-        (b.Name || '').toLowerCase().includes(name.toLowerCase())
+        (b.name || '').toLowerCase().includes(name.toLowerCase())
       );
       return aIndex - bIndex;
     });
@@ -133,24 +128,13 @@ export const usePackageBottles = (packageInfo: PackageInfo | null) => {
     // Process bottles to have consistent field names
     console.log('🔄 Normalizing bottle data fields...');
     const mappedBottles = sortedBottles.map((bottle, index) => {
-      console.log(`🍷 Processing bottle #${index + 1}: ${bottle.Name}`);
-      console.log(`  - Intro Questions: ${bottle["Intro Questions"] ? 'Present' : 'Missing'}`);
-      console.log(`  - Deep Question: ${bottle["Deep Question"] ? 'Present' : 'Missing'}`);
-      console.log(`  - Final Questions: ${bottle["Final Questions"] ? 'Present' : 'Missing'}`);
-      
-      // Create a new object with both naming conventions
+      console.log(`🍷 Processing bottle #${index + 1}: ${bottle.name || bottle.Name}`);
       return {
-        ...bottle,
-        // Map the intro questions field from either format
-        introQuestions: bottle["Intro Questions"] || null,
-        // Map the deep questions field from either format
-        deepQuestions: bottle["Deep Question"] || null,
-        // Map the final questions field from either format
-        finalQuestions: bottle["Final Questions"] || null,
+        ...bottle
       };
     });
     
-    console.log('✅ Final processed bottles:', mappedBottles.map(b => b.Name));
+    console.log('✅ Final processed bottles:', mappedBottles.map(b => b.name || b.Name));
     setBottlesData(mappedBottles);
     setLoading(false);
     return mappedBottles;

@@ -1,5 +1,4 @@
-
-import React, { createContext, useEffect, useState, useContext } from 'react';
+import React, { createContext, useEffect, useState, useContext, useRef } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +18,7 @@ export const useSupabase = () => useContext(SupabaseContext);
 export const SupabaseProvider = ({ children }: { children: React.ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [connectionError, setConnectionError] = useState<Error | null>(null);
+  const connectionToastShownRef = useRef(false);
 
   useEffect(() => {
     const initializeSupabase = async () => {
@@ -36,7 +36,6 @@ export const SupabaseProvider = ({ children }: { children: React.ReactNode }) =>
         } else {
           console.log('Supabase connection established successfully');
           setIsInitialized(true);
-          toast.success('Connected to the database');
         }
       } catch (err) {
         console.error('Failed to initialize Supabase:', err);

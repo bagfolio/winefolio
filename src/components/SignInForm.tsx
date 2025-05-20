@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useWineTasting } from '@/context/WineTastingContext';
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { PackageInfo } from '../types';
 import { useDataPreload } from '@/hooks/useDataPreload';
+import type { Database } from '@/integrations/supabase/types';
 
 const SignInForm = () => {
   const { setUserInfo, nextQuestion, setLoading, setPackageInfo } = useWineTasting();
@@ -25,6 +26,8 @@ const SignInForm = () => {
   const [connectionStatus, setConnectionStatus] = useState<string>('Initializing...');
   const [selectedPackage, setSelectedPackage] = useState<PackageInfo | null>(null);
   const { preloadData, preloading, preloadError, preloadSuccess } = useDataPreload();
+  const connectionToastShownRef = useRef(false);
+  const [isHost, setIsHost] = useState(false);
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -33,25 +36,27 @@ const SignInForm = () => {
         setConnectionStatus('Starting to fetch package data from Supabase...');
         
         // Try fetching from the Packages table
-        setConnectionStatus(prev => `${prev}\nAttempting to query the "Packages" table...`);
+        setConnectionStatus(prev => `${prev}\nAttempting to query the "packages" table...`);
         
-        const { data, error } = await supabase
-          .from('Packages')
+        const { data, error } = await (supabase as any)
+          .from('packages')
           .select('*');
           
         if (error) {
           throw new Error(`Error fetching packages: ${error.message}`);
         }
         
-        setConnectionStatus(prev => `${prev}\nSuccessfully connected to Supabase!`);
-        console.log('Raw packages data:', data);
+        const filteredData = ((data || []) as any[]).filter(pkg => pkg.id);
         
-        if (data && data.length > 0) {
-          setConnectionStatus(prev => `${prev}\nFound ${data.length} packages in the database.`);
+        setConnectionStatus(prev => `${prev}\nSuccessfully connected to Supabase!`);
+        console.log('Raw packages data:', filteredData);
+        
+        if (filteredData.length > 0) {
+          setConnectionStatus(prev => `${prev}\nFound ${filteredData.length} packages in the database.`);
           
-          const formattedPackages: PackageInfo[] = data.map((pkg) => ({
+          const formattedPackages: PackageInfo[] = filteredData.map((pkg) => ({
             name: pkg.name || 'Unnamed Package',
-            package_id: pkg.package_id || 'NO_ID',
+            package_id: pkg.id || 'NO_ID',
             bottles: pkg.bottles || '',
             sommeliers: pkg.sommeliers || '',
             tastings: pkg.tastings || '',
@@ -63,10 +68,6 @@ const SignInForm = () => {
             setSessionId(formattedPackages[0].package_id);
             setSelectedPackage(formattedPackages[0]);
           }
-          
-          toast.success('Connection Successful', {
-            description: `Found ${data.length} wine tasting packages.`
-          });
         } else {
           setConnectionStatus(prev => `${prev}\nNo packages found in database or database is empty.`);
           throw new Error('No packages found in database or database is empty');
@@ -180,7 +181,7 @@ const SignInForm = () => {
         setPackageInfo(selectedPackage);
         
         // Store user info
-        const userData = { name, email, sessionId: trimmedSessionId };
+        const userData = { name, email, sessionId: trimmedSessionId, isHost };
         console.log('Setting user info:', userData);
         setUserInfo(userData);
         
@@ -313,6 +314,17 @@ const SignInForm = () => {
               placeholder="john@example.com"
             />
             {errors.email && <p className="text-red-300 text-sm mt-1">{errors.email}</p>}
+          </div>
+          <div className="mb-4">
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                checked={isHost}
+                onChange={e => setIsHost(e.target.checked)}
+                className="form-checkbox h-4 w-4 text-purple-600"
+              />
+              <span className="ml-2 text-white">I am a host</span>
+            </label>
           </div>
           <Button 
             type="submit" 

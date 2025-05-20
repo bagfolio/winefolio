@@ -1,4 +1,3 @@
-
 // Add additional utility functions for question handling
 
 import { Json } from '../integrations/supabase/types';
@@ -38,17 +37,23 @@ export const getQuestionType = (responseType: string): Question['type'] => {
 };
 
 // Helper function to parse options from choices string
-export const parseOptions = (choices: string | null | undefined): string[] | undefined => {
-  if (!choices) return undefined;
-  
-  try {
-    // Try to parse as JSON
-    return JSON.parse(choices);
-  } catch (e) {
-    // If not valid JSON, split by comma
-    return choices.split(',').map(c => c.trim());
+export function parseOptions(choices: any): string[] | null {
+  if (!choices) return null;
+  if (Array.isArray(choices)) return choices;
+  if (typeof choices === 'string') {
+    try {
+      // Try to parse as JSON array
+      const parsed = JSON.parse(choices);
+      if (Array.isArray(parsed)) return parsed;
+      // Otherwise, treat as comma-separated string
+      return choices.split(',').map((c: string) => c.trim());
+    } catch {
+      // Fallback to comma-separated
+      return choices.split(',').map((c: string) => c.trim());
+    }
   }
-};
+  return null;
+}
 
 // Helper function to safely extract properties from Json
 export const getJsonProperty = (json: any, property: string, defaultValue: string): string => {
@@ -87,10 +92,10 @@ export const getAvailableQuestions = (bottles: BottleData[]): Question[] => {
     description: 'Please sign in to get started'
   });
   
-  // Generate questions for each bottle
   bottles.forEach((bottle, bottleIndex) => {
     const bottleNumber = bottleIndex + 1;
-    const bottleName = bottle.Name || `Bottle ${bottleNumber}`;
+    const bottleName = bottle.Name || bottle.name || `Bottle ${bottleNumber}`;
+    const bottleQuestions = bottle.questions || [];
     
     // Add bottle interlude
     dynamicQuestions.push({
@@ -101,44 +106,16 @@ export const getAvailableQuestions = (bottles: BottleData[]): Question[] => {
       bottleNumber
     });
     
-    // Add intro questions
-    dynamicQuestions.push({
-      id: 100 + (bottleNumber * 10) + 1,
-      type: 'text',
-      question: getJsonProperty(bottle["Intro Questions"] || bottle.introQuestions, 'question', 'What are your initial thoughts about this wine?'),
-      description: getJsonProperty(bottle["Intro Questions"] || bottle.introQuestions, 'description', 'Share your first impressions'),
-      bottleNumber
-    });
-    
-    // Add deep dive questions  
-    dynamicQuestions.push({
-      id: 100 + (bottleNumber * 10) + 2,
-      type: 'scale',
-      question: getJsonProperty(bottle["Deep Question"] || bottle.deepQuestions, 'question', 'How would you rate this wine overall?'),
-      description: getJsonProperty(bottle["Deep Question"] || bottle.deepQuestions, 'description', 'Rate from 1 (poor) to 10 (excellent)'),
-      bottleNumber
-    });
-    
-    // Add flavor questions (always multiple choice)
-    dynamicQuestions.push({
-      id: 100 + (bottleNumber * 10) + 3,
-      type: 'multipleChoice',
-      question: 'What fruit flavors do you detect in this wine?',
-      options: [
-        'Apple', 'Pear', 'Citrus', 'Tropical', 
-        'Cherry', 'Strawberry', 'Raspberry', 'Blueberry',
-        'Plum', 'Blackberry', 'Currant', 'Other'
-      ],
-      bottleNumber
-    });
-    
-    // Add final questions
-    dynamicQuestions.push({
-      id: 100 + (bottleNumber * 10) + 4,
-      type: 'text',
-      question: getJsonProperty(bottle["Final Questions"] || bottle.finalQuestions, 'question', 'Any additional thoughts about this wine?'),
-      description: getJsonProperty(bottle["Final Questions"] || bottle.finalQuestions, 'description', 'Share your final impressions'),
-      bottleNumber
+    // Add each question for this bottle in order
+    bottleQuestions.forEach((q, qIndex) => {
+      dynamicQuestions.push({
+        id: 100 + (bottleNumber * 10) + qIndex + 1,
+        type: q.question_type,
+        question: q.question_text,
+        description: q.description || '',
+        options: q.options,
+        bottleNumber
+      });
     });
   });
   

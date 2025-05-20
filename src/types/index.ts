@@ -1,10 +1,10 @@
-
 import { Json } from '../integrations/supabase/types';
 
 export interface UserInfo {
   name: string;
   email: string;
   sessionId: string;
+  isHost?: boolean;
 }
 
 export interface PackageInfo {
@@ -27,7 +27,7 @@ export interface WineTastingResponse {
 
 export interface Question {
   id: number;
-  type: 'signin' | 'text' | 'scale' | 'multipleChoice' | 'interlude' | 'thanks' | 'audio' | 'video';
+  type: 'signin' | 'text' | 'scale' | 'multipleChoice' | 'interlude' | 'thanks' | 'audio' | 'video' | 'divider';
   title?: string;
   description?: string;
   options?: string[];
@@ -35,4 +35,6 @@ export interface Question {
   bottleNumber?: number;
   mediaUrl?: string;
   sommelierName?: string;
+  for_host?: boolean; // Only show to hosts
+  divider?: boolean;  // Is a divider screen
 }

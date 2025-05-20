@@ -1,4 +1,3 @@
-
 import { Question } from '@/types';
 
 /**
@@ -50,6 +49,65 @@ export const questions: Question[] = [
     type: 'text',
     question: 'Any additional thoughts about this wine?',
     description: 'Share your final impressions',
+    bottleNumber: 1
+  },
+  
+  // Divider for Intro
+  {
+    id: 10,
+    type: 'divider',
+    title: 'Intro Questions',
+    divider: true
+  },
+  // Regular intro question
+  {
+    id: 11,
+    type: 'text',
+    question: 'What do you notice first?',
+    bottleNumber: 1
+  },
+  // Host-only audio message
+  {
+    id: 12,
+    type: 'audio',
+    question: 'Host briefing audio',
+    bottleNumber: 1,
+    for_host: true
+  },
+  // Divider for Deep Dive
+  {
+    id: 20,
+    type: 'divider',
+    title: 'Deep Dive',
+    divider: true
+  },
+  // Regular deep dive question
+  {
+    id: 21,
+    type: 'text',
+    question: 'Describe the acidity.',
+    bottleNumber: 1
+  },
+  // Host-only video message
+  {
+    id: 22,
+    type: 'video',
+    question: 'Host video message',
+    bottleNumber: 1,
+    for_host: true
+  },
+  // Divider for Final
+  {
+    id: 30,
+    type: 'divider',
+    title: 'Final Questions',
+    divider: true
+  },
+  // Regular final question
+  {
+    id: 31,
+    type: 'text',
+    question: 'Any final thoughts?',
     bottleNumber: 1
   },
   

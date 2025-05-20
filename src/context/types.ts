@@ -1,19 +1,11 @@
-
 import { UserInfo, WineTastingResponse, PackageInfo } from '../types';
 import { Json } from '../integrations/supabase/types';
 
 export interface BottleData {
-  Name: string;
+  name: string;
   bottle_image_url: string | null;
-  // Support both naming conventions for questions
-  introQuestions?: Json | null;
-  deepQuestions?: Json | null;
-  finalQuestions?: Json | null;
-  // Database fields with spaces in names
-  "Intro Questions"?: string | null;
-  "Deep Question"?: string | null;
-  "Final Questions"?: Json | null;
   sequence: number | null;
+  questions?: any[];
   [key: string]: any;
 }
 
@@ -38,4 +30,6 @@ export interface WineTastingContextType {
   nextQuestion: () => void;
   previousQuestion: () => void;
   submitResponses: () => void;
+  dynamicQuestions: any[];
+  setDynamicQuestions: (questions: any[]) => void;
 }

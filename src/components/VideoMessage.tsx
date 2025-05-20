@@ -1,8 +1,6 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useWineTasting } from '@/context/WineTastingContext';
-import { questions } from '@/data/questions';
 import { ArrowLeft, ArrowRight, Play, Pause, Video, Wine } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
@@ -12,8 +10,8 @@ interface VideoMessageProps {
 }
 
 const VideoMessage: React.FC<VideoMessageProps> = ({ questionId }) => {
-  const { nextQuestion, previousQuestion } = useWineTasting();
-  const question = questions.find(q => q.id === questionId);
+  const { nextQuestion, previousQuestion, dynamicQuestions } = useWineTasting();
+  const question = dynamicQuestions.find(q => q.id === questionId);
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 

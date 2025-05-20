@@ -1,15 +1,19 @@
-
 import React from 'react';
-import { questions } from '@/data/questions';
 import { useWineTasting } from '@/context/WineTastingContext';
 
-const ProgressIndicator = () => {
-  const { currentQuestionIndex } = useWineTasting();
-  const totalQuestions = questions.length;
+interface ProgressIndicatorProps {
+  questions?: any[];
+}
+
+const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({ questions }) => {
+  const context = useWineTasting();
+  const currentQuestionIndex = context.currentQuestionIndex;
+  const dynamicQuestions = questions || context.dynamicQuestions;
+  const totalQuestions = dynamicQuestions.length;
   
   return (
     <div className="progress-dots">
-      {questions.map((_, index) => (
+      {dynamicQuestions.map((_, index) => (
         <div
           key={index}
           className={`progress-dot ${index <= currentQuestionIndex ? 'active' : ''}`}

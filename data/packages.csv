@@ -1,0 +1,5 @@
+package_id,name,bottles,sommeliers,tastings,hosts
+test-pkg-001,Test Tasting Package,"Test Bottle A,Test Bottle B",,,
+host-demo-001,Host Demo Package,"Demo Bottle 1,Demo Bottle 2",,,
+modern-tasting-001,Modern Tasting Set,"Sample White,Sample Red",,,
+sean-adequacy-001,Sean's Adequacy Test,"HB Sancerre,Frank Family Chardonnay,Argyle Pinot",,,

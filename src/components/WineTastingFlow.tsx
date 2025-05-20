@@ -3,10 +3,10 @@ import { useWineTasting } from '@/context/WineTastingContext';
 import { questions } from '@/data/questions';
 import ProgressIndicator from './ProgressIndicator';
 import LoadingScreen from './LoadingScreen';
-import { usePackageBottles } from '@/hooks/usePackageBottles';
-import { useBottleQuestions } from '@/hooks/useBottleQuestions';
 import QuestionRenderer from './QuestionRenderer';
 import { toast } from 'sonner';
+import SignInForm from './SignInForm';
+import DividerScreen from './DividerScreen';
 
 const WineTastingFlow = () => {
   const { 
@@ -15,10 +15,13 @@ const WineTastingFlow = () => {
     setLoading,
     setBottlesData,
     packageInfo,
-    userInfo
+    userInfo,
+    dynamicQuestions,
+    bottlesData
   } = useWineTasting();
   
   const [initialLoadAttempted, setInitialLoadAttempted] = useState(false);
+  const [answers, setAnswers] = useState<{ [questionId: number]: any }>({});
   
   // For debugging
   useEffect(() => {
@@ -28,54 +31,52 @@ const WineTastingFlow = () => {
     console.log('🔢 Current question index:', currentQuestionIndex);
   }, [packageInfo, userInfo, currentQuestionIndex]);
   
-  // Only fetch bottles if we already have package info (user is logged in)
-  const { 
-    bottlesData, 
-    loading: bottlesLoading, 
-    error: bottlesError
-  } = usePackageBottles(userInfo && packageInfo ? packageInfo : null);
+  // Filter and sort questions for the current user
+  const sortedQuestions = [...dynamicQuestions].sort((a, b) => (a.sequence || a.id || 0) - (b.sequence || b.id || 0));
+  const filteredQuestions = sortedQuestions.filter(q => !q.for_host || (q.for_host && (userInfo?.isHost ?? false)));
+  const currentQuestion = filteredQuestions[currentQuestionIndex];
   
-  const { 
-    dynamicQuestions, 
-    isLoading: questionsLoading 
-  } = useBottleQuestions(bottlesData);
+  // Debug: Log dynamicQuestions and currentQuestion structure
+  useEffect(() => {
+    console.log('DEBUG dynamicQuestions:', dynamicQuestions);
+    console.log('DEBUG currentQuestion:', currentQuestion);
+  }, [dynamicQuestions, currentQuestionIndex]);
   
-  // Set the current question based on dynamic questions or fallback to default questions
-  const currentQuestion = dynamicQuestions[currentQuestionIndex] || questions[currentQuestionIndex];
+  // Handler for answer changes
+  const handleAnswerChange = (val: any) => {
+    if (!currentQuestion) return;
+    setAnswers(prev => ({ ...prev, [currentQuestion.id]: val }));
+  };
   
   // Log bottles data for debugging
   useEffect(() => {
     console.log(`🍷 Bottles data updated - ${bottlesData.length} bottles`);
     
     if (bottlesData && bottlesData.length > 0) {
-      console.log('🍾 WineTastingFlow has access to bottles:', bottlesData.map(b => b.Name));
-      setBottlesData(bottlesData);
-      
+      console.log('🍾 WineTastingFlow has access to bottles:', bottlesData.map(b => b.name));
       // Debug the bottle data fields
       bottlesData.forEach((bottle, index) => {
-        console.log(`🍷 Bottle ${index + 1}: ${bottle.Name}`, {
+        console.log(`🍷 Bottle ${index + 1}: ${bottle.name}`, {
           introQuestions: bottle.introQuestions ? 'Present' : 'Missing',
           deepQuestions: bottle.deepQuestions ? 'Present' : 'Missing', 
           finalQuestions: bottle.finalQuestions ? 'Present' : 'Missing'
         });
       });
-      
       setInitialLoadAttempted(true);
-    } else if (bottlesData && bottlesData.length === 0 && !bottlesLoading) {
+    } else if (bottlesData && bottlesData.length === 0 && !contextLoading) {
       console.log('⚠️ No bottles data available in WineTastingFlow');
       setInitialLoadAttempted(true);
-      
       // If we have a package but no bottles, show a toast
       if (packageInfo && packageInfo.package_id && currentQuestionIndex > 0) {
         toast.error('Could not load wine data. Please check your connection and try again.');
       }
     }
-  }, [bottlesData, setBottlesData, bottlesLoading, packageInfo, currentQuestionIndex]);
+  }, [bottlesData, contextLoading, packageInfo, currentQuestionIndex]);
   
   // Add a timer to automatically hide the loading screen after 15 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
-      if ((contextLoading || bottlesLoading || questionsLoading) && currentQuestionIndex > 0) {
+      if ((contextLoading) && currentQuestionIndex > 0) {
         console.log('⏱️ Loading timeout reached, forcing loading state to false');
         if (setLoading) setLoading(false);
         setInitialLoadAttempted(true);
@@ -84,7 +85,7 @@ const WineTastingFlow = () => {
     }, 15000); // 15 second timeout
     
     return () => clearTimeout(timer);
-  }, [contextLoading, bottlesLoading, questionsLoading, setLoading, currentQuestionIndex]);
+  }, [contextLoading, setLoading, currentQuestionIndex]);
   
   // Force the first question (sign-in) if currentQuestionIndex is 0
   useEffect(() => {
@@ -97,7 +98,7 @@ const WineTastingFlow = () => {
   
   // Show loading screen if any data is being loaded and we haven't tried loading yet
   // Only show loading after login (currentQuestionIndex > 0)
-  const isLoading = (contextLoading || bottlesLoading || questionsLoading) && 
+  const isLoading = (contextLoading) && 
                    !initialLoadAttempted && 
                    currentQuestionIndex > 0;
   
@@ -111,10 +112,10 @@ const WineTastingFlow = () => {
 
   // Display any errors encountered during bottle loading
   useEffect(() => {
-    if (bottlesError && currentQuestionIndex > 0) {
-      toast.error(`Error loading wine data: ${bottlesError}`);
+    if (bottlesData && bottlesData.length > 0 && currentQuestionIndex > 0) {
+      toast.error(`Error loading wine data: ${bottlesData[0].error}`);
     }
-  }, [bottlesError, currentQuestionIndex]);
+  }, [bottlesData, currentQuestionIndex]);
   
   // Log the current application state
   useEffect(() => {
@@ -126,27 +127,13 @@ const WineTastingFlow = () => {
     console.log(`  - userInfo present: ${!!userInfo}`);
   }, [isLoading, noDataAfterLoading, dynamicQuestions.length, currentQuestionIndex, userInfo]);
   
-  if (isLoading) {
+  if (!currentQuestion || currentQuestion.type === 'signin') {
+    return <SignInForm />;
+  }
+
+  if (isLoading || !filteredQuestions || filteredQuestions.length === 0) {
     console.log('⏳ Showing loading screen...');
     return <LoadingScreen />;
-  }
-  
-  // Always show sign in screen when currentQuestionIndex is 0, regardless of other state
-  if (currentQuestionIndex === 0) {
-    console.log('👋 Showing sign in screen');
-    // Always use the first question (should be signin) when index is 0
-    return (
-      <div className="min-h-screen flex flex-col">
-        <main className="flex-grow flex items-center justify-center">
-          <QuestionRenderer question={{
-            id: 1,
-            type: 'signin',
-            question: 'Welcome to the Wine Tasting Experience',
-            description: 'Please sign in to get started'
-          }} />
-        </main>
-      </div>
-    );
   }
   
   if (noDataAfterLoading) {
@@ -172,15 +159,24 @@ const WineTastingFlow = () => {
     );
   }
 
+  // Render divider screens
+  if (currentQuestion.type === 'divider' || currentQuestion.divider) {
+    return <DividerScreen label={currentQuestion.title || currentQuestion.question || 'Section'} />;
+  }
+
   console.log(`🎬 Rendering question: ${currentQuestion?.question || 'No question available'}`);
   
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-grow flex items-center justify-center">
-        <QuestionRenderer question={currentQuestion} />
+        <QuestionRenderer 
+          question={currentQuestion} 
+          value={answers[currentQuestion.id]}
+          onChange={handleAnswerChange}
+        />
       </main>
       <footer className="mt-auto pb-6">
-        <ProgressIndicator />
+        <ProgressIndicator questions={filteredQuestions} />
       </footer>
     </div>
   );

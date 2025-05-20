@@ -1,8 +1,6 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useWineTasting } from '@/context/WineTastingContext';
-import { questions } from '@/data/questions';
 import { ArrowLeft, ArrowRight, Play, Pause, Volume2, Wine } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
@@ -11,8 +9,8 @@ interface AudioMessageProps {
 }
 
 const AudioMessage: React.FC<AudioMessageProps> = ({ questionId }) => {
-  const { nextQuestion, previousQuestion } = useWineTasting();
-  const question = questions.find(q => q.id === questionId);
+  const { nextQuestion, previousQuestion, dynamicQuestions } = useWineTasting();
+  const question = dynamicQuestions.find(q => q.id === questionId);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 

@@ -1,0 +1,10 @@
+name,sequence,bottle_image_url,package_name
+Argyle Pinot,3,https://storage.googleapis.com/audos/kyg/pinotnoir-3.png,Sean's Adequacy Test
+Frank Family Chardonnay,2,https://storage.googleapis.com/audos/kyg/chard-2.png,Sean's Adequacy Test
+HB Sancerre,1,https://storage.googleapis.com/audos/kyg/sancerre-1.png,Sean's Adequacy Test
+Test Bottle A,1,,Test Tasting Package
+Test Bottle B,2,,Test Tasting Package
+Demo Bottle 1,1,,Host Demo Package
+Demo Bottle 2,2,,Host Demo Package
+Sample White,1,,Modern Tasting Set
+Sample Red,2,,Modern Tasting Set

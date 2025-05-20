@@ -1,8 +1,6 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useWineTasting } from '@/context/WineTastingContext';
-import { questions } from '@/data/questions';
 import { ArrowLeft, ArrowRight, Wine } from 'lucide-react';
 
 interface InterludeProps {
@@ -10,8 +8,8 @@ interface InterludeProps {
 }
 
 const Interlude: React.FC<InterludeProps> = ({ questionId }) => {
-  const { nextQuestion, previousQuestion } = useWineTasting();
-  const question = questions.find(q => q.id === questionId);
+  const { nextQuestion, previousQuestion, dynamicQuestions } = useWineTasting();
+  const question = dynamicQuestions.find(q => q.id === questionId);
 
   return (
     <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto min-h-[60vh]">

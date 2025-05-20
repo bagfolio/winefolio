@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { PackageInfo } from '@/types';
 import { BottleData } from '@/context/types';
@@ -14,7 +13,7 @@ export const useBottlesData = (packageInfo: PackageInfo | null) => {
     try {
       console.log('🔍 Fetching all bottles for debugging...');
       const { data, error } = await supabase
-        .from('Bottles')
+        .from('bottles')
         .select('*');
       
       if (error) {
@@ -40,7 +39,7 @@ export const useBottlesData = (packageInfo: PackageInfo | null) => {
         
         // Try a simple query to test the connection
         const { data: packages, error } = await supabase
-          .from('Packages')
+          .from('packages')
           .select('*');
         
         if (error) {
