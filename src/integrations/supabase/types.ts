@@ -9,92 +9,117 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      Bottles: {
+      bottles: {
         Row: {
-          bottle_image_url: string | null
-          "Deep Question": string | null
-          "Final Questions": Json | null
-          "Intro Questions": string | null
-          Name: string | null
-          sequence: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          package_id: string | null
+          updated_at: string | null
         }
         Insert: {
-          bottle_image_url?: string | null
-          "Deep Question"?: string | null
-          "Final Questions"?: Json | null
-          "Intro Questions"?: string | null
-          Name?: string | null
-          sequence?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          package_id?: string | null
+          updated_at?: string | null
         }
         Update: {
-          bottle_image_url?: string | null
-          "Deep Question"?: string | null
-          "Final Questions"?: Json | null
-          "Intro Questions"?: string | null
-          Name?: string | null
-          sequence?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          package_id?: string | null
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bottles_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      Packages: {
+      packages: {
         Row: {
           bottles: string | null
-          hosts: string | null
-          name: string | null
-          package_id: string | null
-          sommeliers: string | null
-          tastings: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
         }
         Insert: {
           bottles?: string | null
-          hosts?: string | null
-          name?: string | null
-          package_id?: string | null
-          sommeliers?: string | null
-          tastings?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
         }
         Update: {
           bottles?: string | null
-          hosts?: string | null
-          name?: string | null
-          package_id?: string | null
-          sommeliers?: string | null
-          tastings?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
-      Questions: {
+      questions: {
         Row: {
-          Bottles: string | null
-          choices: string | null
-          label: string | null
-          "Question Set Type": string | null
-          "Question Text": string | null
-          questionJSON: Json | null
-          RecordId: string | null
-          "Response Type": string | null
+          bottle_id: string | null
+          created_at: string | null
+          for_host: boolean | null
+          help_text: string | null
+          id: string
+          media_url: string | null
+          options: Json | null
+          question_text: string
+          question_type: string
+          sequence: number | null
+          updated_at: string | null
         }
         Insert: {
-          Bottles?: string | null
-          choices?: string | null
-          label?: string | null
-          "Question Set Type"?: string | null
-          "Question Text"?: string | null
-          questionJSON?: Json | null
-          RecordId?: string | null
-          "Response Type"?: string | null
+          bottle_id?: string | null
+          created_at?: string | null
+          for_host?: boolean | null
+          help_text?: string | null
+          id?: string
+          media_url?: string | null
+          options?: Json | null
+          question_text: string
+          question_type: string
+          sequence?: number | null
+          updated_at?: string | null
         }
         Update: {
-          Bottles?: string | null
-          choices?: string | null
-          label?: string | null
-          "Question Set Type"?: string | null
-          "Question Text"?: string | null
-          questionJSON?: Json | null
-          RecordId?: string | null
-          "Response Type"?: string | null
+          bottle_id?: string | null
+          created_at?: string | null
+          for_host?: boolean | null
+          help_text?: string | null
+          id?: string
+          media_url?: string | null
+          options?: Json | null
+          question_text?: string
+          question_type?: string
+          sequence?: number | null
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "questions_bottle_id_fkey"
+            columns: ["bottle_id"]
+            isOneToOne: false
+            referencedRelation: "bottles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

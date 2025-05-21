@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useWineTasting } from '@/context/WineTastingContext';
@@ -14,6 +15,9 @@ const VideoMessage: React.FC<VideoMessageProps> = ({ questionId }) => {
   const question = dynamicQuestions.find(q => q.id === questionId);
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Use a demo video if no video URL is provided
+  const videoUrl = question?.mediaUrl || 'https://storage.googleapis.com/webfundamentals-assets/videos/chrome.mp4';
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -57,9 +61,10 @@ const VideoMessage: React.FC<VideoMessageProps> = ({ questionId }) => {
           <AspectRatio ratio={16/9} className="bg-black/30 rounded-lg overflow-hidden relative mb-3">
             <video 
               ref={videoRef}
-              className="w-full h-full object-cover"
-              src={question?.mediaUrl}
+              className="w-full h-full object-contain"
+              src={videoUrl}
               onEnded={() => setIsPlaying(false)}
+              controls={false}
             />
             {!isPlaying && (
               <Button 

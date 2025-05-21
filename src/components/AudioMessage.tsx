@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useWineTasting } from '@/context/WineTastingContext';
@@ -13,6 +14,9 @@ const AudioMessage: React.FC<AudioMessageProps> = ({ questionId }) => {
   const question = dynamicQuestions.find(q => q.id === questionId);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Use a demo audio if no audio URL is provided
+  const audioUrl = question?.mediaUrl || 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg';
 
   const handlePlayPause = () => {
     if (audioRef.current) {
@@ -76,7 +80,7 @@ const AudioMessage: React.FC<AudioMessageProps> = ({ questionId }) => {
           {/* Hidden audio element */}
           <audio 
             ref={audioRef} 
-            src={question?.mediaUrl}
+            src={audioUrl}
             onEnded={() => setIsPlaying(false)}
             className="hidden"
           />
