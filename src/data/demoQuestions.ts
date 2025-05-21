@@ -54,7 +54,7 @@ export const demoQuestions: Question[] = [
     type: 'audio',
     title: 'Audio Message Example',
     description: 'This demonstrates how audio messages appear in the flow',
-    mediaUrl: 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg',
+    mediaUrl: 'https://storage.googleapis.com/kyg-recordings/Beaulieu.m4a',
     sommelierName: 'Demo Sommelier',
     bottleNumber: 1
   },
@@ -65,7 +65,7 @@ export const demoQuestions: Question[] = [
     type: 'video',
     title: 'Video Message Example',
     description: 'This demonstrates how video messages appear in the flow',
-    mediaUrl: 'https://storage.googleapis.com/webfundamentals-assets/videos/chrome.mp4',
+    mediaUrl: 'https://storage.googleapis.com/kyg-recordings/IMG_3786.mov',
     sommelierName: 'Demo Sommelier',
     bottleNumber: 1
   },

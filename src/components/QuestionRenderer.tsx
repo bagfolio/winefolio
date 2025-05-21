@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Question } from '@/types';
 import SignInForm from './SignInForm';
@@ -24,7 +25,6 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({ question, onChange,
     case 'scale':
       return <ScaleQuestion question={question} value={value} onChange={onChange} />;
     case 'multipleChoice':
-    case 'multiple_choice':
       return <MultipleChoiceQuestion question={question} value={value} onChange={onChange} />;
     case 'interlude':
       return <Interlude questionId={question.id} />;
@@ -34,30 +34,11 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({ question, onChange,
       return <VideoMessage questionId={question.id} />;
     case 'thanks':
       return <ThanksScreen questionId={question.id} />;
-    case '1-10 sliding scale':
-      return (
-        <div>
-          <p>{question.question}</p>
-          <input
-            type="range"
-            min={1}
-            max={10}
-            value={value || 5}
-            onChange={e => onChange(Number(e.target.value))}
-          />
-          <span>{value || 5}</span>
-        </div>
-      );
     default:
       return (
-        <div>
-          <p>{question.question}</p>
-          <textarea
-            value={value || ''}
-            onChange={e => onChange(e.target.value)}
-            rows={3}
-            style={{ width: '100%' }}
-          />
+        <div className="p-6">
+          <p className="text-white text-lg mb-4">Unsupported question type: {question.type}</p>
+          <p className="text-white">{question.question}</p>
         </div>
       );
   }
